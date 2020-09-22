@@ -1,0 +1,4 @@
+include ':store-reviews'
+
+// Required for Kotlin Multiplatform.
+enableFeaturePreview('GRADLE_METADATA')
