@@ -173,10 +173,10 @@ import java.util.Locale
           logger.increaseIndent()
 
           notifiers.forEach { notifier ->
-            logger.log("""${notifier.emoji()} Posting reviews to ${notifier.name()}""")
-            reviews.forEach { review ->
-              notifier.notify(app, store.name(), review)
-            }
+            val reviewFilter = notifier.configuration().reviewFilter
+            val filteredReviews = reviews.filter { reviewFilter.matches(it) }
+            logger.log("""${notifier.emoji()} Posting ${filteredReviews.size} reviews to ${notifier.name()}""")
+            filteredReviews.forEach { review -> notifier.notify(app, store.name(), review) }
           }
 
           logger.decreaseIndent()

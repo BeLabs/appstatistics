@@ -12,6 +12,7 @@ import java.time.Instant
 @Serializable internal data class Review(
   @SerialName("id") val id: String,
   @SerialName("title") val title: String? = null,
+  @SerialName("language") val language: String? = null,
   @SerialName("content") val content: String,
   @SerialName("rating") val rating: Int,
   @SerialName("version") val version: String,
