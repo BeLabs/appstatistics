@@ -17,7 +17,7 @@ import java.time.format.FormatStyle.MEDIUM
 import java.util.Locale
 
 internal class SlackNotifier(
-  private val url: String,
+  private val configuration: SlackConfiguration,
   private val zoneId: ZoneId
 ) : Notifier {
   private val httpClient = HttpClient(OkHttp.create())
@@ -32,7 +32,7 @@ internal class SlackNotifier(
     """📱"""
 
   override suspend fun notify(locale: Locale, app: App, storeName: String, review: Review) {
-    httpClient.post<Unit>(url) {
+    httpClient.post<Unit>(configuration.hook) {
       val stringBuilder = StringBuilder()
       stringBuilder.append("★".repeat(review.rating))
       stringBuilder.append("☆".repeat(5 - review.rating))
@@ -55,8 +55,8 @@ internal class SlackNotifier(
       body = json.stringify(
         SlackPayload.serializer(),
         SlackPayload(
-          emoji = ":${app.name.toLowerCase(Locale.ROOT)}:",
-          username = "${app.name} ($storeName)",
+          iconEmoji = configuration.emoji ?: ":${app.name.toLowerCase(Locale.ROOT)}:",
+          username = configuration.username ?: "${app.name} ($storeName)",
           text = stringBuilder.toString()
         )
       )
@@ -65,7 +65,21 @@ internal class SlackNotifier(
 }
 
 @Serializable private data class SlackPayload(
-  @SerialName("icon_emoji") val emoji: String,
+  @SerialName("icon_emoji") val iconEmoji: String,
   @SerialName("username") val username: String,
   @SerialName("text") val text: String
 )
+
+@Serializable internal data class SlackConfiguration(
+  @SerialName("emoji") val emoji: String? = null,
+  @SerialName("username") val username: String? = null,
+  @SerialName("hook") val hook: String
+) {
+  companion object {
+    val EXAMPLE = SlackConfiguration(
+      emoji = ":star:",
+      username = "Review",
+      hook = "https://hooks.slack.com/services/ASDFDSR32/TW863FSGDGA/Ad344SDAHTYOJTGE2354DGSF"
+    )
+  }
+}
