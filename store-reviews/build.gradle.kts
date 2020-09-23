@@ -28,4 +28,6 @@ dependencies {
   implementation("io.ktor:ktor-client-core-jvm:$ktor")
   implementation("io.ktor:ktor-client-logging-jvm:$ktor")
   implementation("io.ktor:ktor-client-okhttp:$ktor")
+
+  testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
 }
