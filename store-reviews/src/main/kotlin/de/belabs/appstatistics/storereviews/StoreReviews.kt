@@ -5,6 +5,7 @@ import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import de.belabs.appstatistics.storereviews.notifier.Notifier
+import de.belabs.appstatistics.storereviews.notifier.SlackConfiguration
 import de.belabs.appstatistics.storereviews.notifier.SlackNotifier
 import de.belabs.appstatistics.storereviews.store.AppleStore
 import de.belabs.appstatistics.storereviews.store.PlayStore
@@ -65,13 +66,13 @@ import java.util.Locale
 
     // Validate apps.
     val appsFile = directory.resolve("apps.json")
-    val json = appsFile.takeIf { it.exists() }?.readText() ?: "[]"
-    val apps = this.json.parse(App.serializer().list, json)
+    val appsJson = appsFile.takeIf { it.exists() }?.readText() ?: "[]"
+    val apps = json.parse(App.serializer().list, appsJson)
 
     if (apps.isEmpty()) {
       logger.log("""🔴 $appsFile is missing or empty. Please configure your apps and re-run this script.""")
       logger.log("Here's an example:")
-      logger.log(this.json.stringify(App.serializer().list, listOf(App.EXAMPLE)))
+      logger.log(json.stringify(App.serializer().list, listOf(App.EXAMPLE)))
       return
     }
 
@@ -86,16 +87,17 @@ import java.util.Locale
     }
 
     // Validate Slack.
-    val slackHookFile = directory.resolve("slack_hook")
-    val slackHook = slackHookFile.takeIf { it.exists() }?.readText()
+    val slackConfigurationFile = directory.resolve("slack.json")
+    val slackConfiguration = slackConfigurationFile.takeIf { it.exists() }?.readText()?.let { json.parse(SlackConfiguration.serializer(), it) }
     val notifiers = listOfNotNull(
-      slackHook?.let { SlackNotifier(it, timeZone) }
+      slackConfiguration?.let { SlackNotifier(it, timeZone) }
     )
 
     if (notifiers.isEmpty()) {
       logger.log("""🔴 No notifiers configured for $accountName. We support:""")
       logger.increaseIndent()
-      logger.log("""📱 Slack - create a file at $slackHookFile containing the fully qualified WebHook url""")
+      logger.log("""📱 Slack - Configure via $slackConfigurationFile - example:""")
+      logger.log(json.stringify(SlackConfiguration.serializer(), SlackConfiguration.EXAMPLE))
       return
     }
 
