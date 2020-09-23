@@ -41,7 +41,10 @@ import java.util.Locale
     logger.log("""🔎 Scanning for accounts in $directoryAppStatistics""")
     logger.increaseIndent()
 
-    val organizations = directoryAppStatistics.listFiles { current, name -> current.resolve(name).isDirectory }.orEmpty()
+    val organizations = directoryAppStatistics.listFiles { current, name ->
+      current.resolve(name).isDirectory
+    }.orEmpty()
+      .filterNot { it.isHidden }
 
     if (organizations.isNotEmpty()) {
       logger.log("""📒️ Found ${organizations.joinToString { it.name }}""")
