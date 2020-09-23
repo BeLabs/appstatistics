@@ -14,10 +14,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.UnstableDefault
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle.MEDIUM
-import java.util.Locale
 
 internal class TelegramBotNotifier(
   private val configuration: TelegramBotNotifierConfiguration,
@@ -58,14 +54,16 @@ internal class TelegramBotNotifier(
 
 @Serializable internal data class TelegramBotNotifierConfiguration(
   @SerialName("bot_token") val botToken: String,
-  @SerialName("chat_id") val chatId: Long
+  @SerialName("chat_id") val chatId: Long,
+  @SerialName("review_filter") override val reviewFilter: NotifierReviewFilter? = null
 ) : NotifierConfiguration {
   override fun asString(json: Json) = json.stringify(serializer(), this)
 
   companion object {
     val EXAMPLE = TelegramBotNotifierConfiguration(
       chatId = 3431432432,
-      botToken = "7205431853:up1jf5adDSF5qewfaUi8r564rgDFsfasdaA"
+      botToken = "7205431853:up1jf5adDSF5qewfaUi8r564rgDFsfasdaA",
+      reviewFilter = NotifierReviewFilter.EXAMPLE
     )
   }
 }

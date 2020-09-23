@@ -28,14 +28,17 @@ import java.time.Instant
     if (app.androidPackageName != null) {
       return androidPublisher.reviews().list(app.androidPackageName).execute().reviews.orEmpty()
         .map {
+          val comment = it.comments.first()
+
           Review(
             id = it.reviewId,
             title = null,
-            content = it.comments.first().userComment.text.trim(),
-            rating = it.comments.first().userComment.starRating,
-            version = it.comments.first().userComment.appVersionName,
+            content = comment.userComment.text.trim(),
+            rating = comment.userComment.starRating,
+            version = comment.userComment.appVersionName,
+            language = comment.userComment.reviewerLanguage,
             author = it.authorName ?: "?",
-            updated = Instant.ofEpochSecond(it.comments.first().userComment.lastModified.seconds)
+            updated = Instant.ofEpochSecond(comment.userComment.lastModified.seconds)
           )
         }
     }

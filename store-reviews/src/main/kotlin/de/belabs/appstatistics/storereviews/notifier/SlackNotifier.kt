@@ -58,7 +58,8 @@ internal class SlackNotifier(
 @Serializable internal data class SlackNotifierConfiguration(
   @SerialName("emoji") val emoji: String? = null,
   @SerialName("username") val username: String? = null,
-  @SerialName("hook") val hook: String
+  @SerialName("hook") val hook: String,
+  @SerialName("review_filter") override val reviewFilter: NotifierReviewFilter? = null
 ) : NotifierConfiguration {
   override fun asString(json: Json) = json.stringify(serializer(), this)
 
@@ -66,7 +67,8 @@ internal class SlackNotifier(
     val EXAMPLE = SlackNotifierConfiguration(
       emoji = ":star:",
       username = "Review",
-      hook = "https://hooks.slack.com/services/ASDFDSR32/TW863FSGDGA/Ad344SDAHTYOJTGE2354DGSF"
+      hook = "https://hooks.slack.com/services/ASDFDSR32/TW863FSGDGA/Ad344SDAHTYOJTGE2354DGSF",
+      reviewFilter = NotifierReviewFilter.EXAMPLE
     )
   }
 }

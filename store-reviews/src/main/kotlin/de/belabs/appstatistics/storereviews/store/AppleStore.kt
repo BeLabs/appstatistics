@@ -44,6 +44,7 @@ internal class AppleStore : Store {
                   id = it.string("id"),
                   title = it.string("title"),
                   content = it.string("content"),
+                  language = language,
                   updated = OffsetDateTime.parse(it.string("updated")).toInstant(),
                   rating = it.string("im:rating").toInt(),
                   version = it.string("im:version"),
