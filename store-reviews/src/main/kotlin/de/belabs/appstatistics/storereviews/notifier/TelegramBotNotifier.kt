@@ -14,10 +14,13 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.UnstableDefault
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle.MEDIUM
 import java.util.Locale
 
-internal class SlackNotifier(
-  private val configuration: SlackNotifierConfiguration,
+internal class TelegramBotNotifier(
+  private val configuration: TelegramBotNotifierConfiguration,
   private val reviewFormatter: ReviewFormatter
 ) : Notifier {
   private val httpClient = HttpClient(OkHttp.create())
@@ -26,47 +29,43 @@ internal class SlackNotifier(
   private val json = Json(JsonConfiguration.Default)
 
   override fun name() =
-    "Slack"
+    "Telegram Bot"
 
   override fun emoji() =
-    """📱"""
+    """✈️ """
 
   override fun configuration() = configuration
 
   override suspend fun notify(app: App, storeName: String, review: Review) {
-    httpClient.post<Unit>(configuration.hook) {
+    httpClient.post<Unit>("https://api.telegram.org/bot${configuration.botToken}/sendMessage") {
       header(HttpHeaders.ContentType, ContentType.Application.Json)
 
       body = json.stringify(
-        SlackPayload.serializer(),
-        SlackPayload(
-          iconEmoji = configuration.emoji ?: ":${app.name.toLowerCase(Locale.ROOT)}:",
-          username = configuration.username ?: "${app.name} ($storeName)",
-          text = reviewFormatter.asMarkdown(review)
+        TelegramBotPayload.serializer(),
+        TelegramBotPayload(
+          chatId = configuration.chatId,
+          text = reviewFormatter.asText(storeName, review)
         )
       )
     }
   }
 }
 
-@Serializable private data class SlackPayload(
-  @SerialName("icon_emoji") val iconEmoji: String,
-  @SerialName("username") val username: String,
+@Serializable private data class TelegramBotPayload(
+  @SerialName("chat_id") val chatId: Long,
   @SerialName("text") val text: String
 )
 
-@Serializable internal data class SlackNotifierConfiguration(
-  @SerialName("emoji") val emoji: String? = null,
-  @SerialName("username") val username: String? = null,
-  @SerialName("hook") val hook: String
+@Serializable internal data class TelegramBotNotifierConfiguration(
+  @SerialName("bot_token") val botToken: String,
+  @SerialName("chat_id") val chatId: Long
 ) : NotifierConfiguration {
   override fun asString(json: Json) = json.stringify(serializer(), this)
 
   companion object {
-    val EXAMPLE = SlackNotifierConfiguration(
-      emoji = ":star:",
-      username = "Review",
-      hook = "https://hooks.slack.com/services/ASDFDSR32/TW863FSGDGA/Ad344SDAHTYOJTGE2354DGSF"
+    val EXAMPLE = TelegramBotNotifierConfiguration(
+      chatId = 3431432432,
+      botToken = "7205431853:up1jf5adDSF5qewfaUi8r564rgDFsfasdaA"
     )
   }
 }

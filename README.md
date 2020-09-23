@@ -7,15 +7,21 @@ Some Kotlin Code to gather some appstatistics from the App Store & Play Store. C
 - Uses the Google API to get Android Reviews
 - Uses the Apple API to get iOS reviews
 - Reviews are stored locally
-- Reviews be posted to Slack
-
-![store-reviews.png](store-reviews.png)
+- Reviews can be sent to different services (Slack & Telegram)
 
 ### Get started
 
 Check out the project and run `./gradlew store-reviews:run`. This will give you step by step instructions.
 
 Alternatively, you can also build a fat Jar using `./gradlew store-reviews:shadowJar` and run it via `java -jar store-reviews/build/libs/store-reviews-all.jar`.
+
+#### Slack example
+
+![store-reviews/notifier-slack.png](store-reviews/notifier-slack.png)
+
+#### Telegram Bot Example
+
+![store-reviews/notifier-telegram-bot.png](store-reviews/notifier-telegram-bot.png)
 
 # License
 

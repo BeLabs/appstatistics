@@ -5,8 +5,10 @@ import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import de.belabs.appstatistics.storereviews.notifier.Notifier
-import de.belabs.appstatistics.storereviews.notifier.SlackConfiguration
 import de.belabs.appstatistics.storereviews.notifier.SlackNotifier
+import de.belabs.appstatistics.storereviews.notifier.SlackNotifierConfiguration
+import de.belabs.appstatistics.storereviews.notifier.TelegramBotNotifier
+import de.belabs.appstatistics.storereviews.notifier.TelegramBotNotifierConfiguration
 import de.belabs.appstatistics.storereviews.store.AppleStore
 import de.belabs.appstatistics.storereviews.store.PlayStore
 import de.belabs.appstatistics.storereviews.store.Store
@@ -89,18 +91,36 @@ import java.util.Locale
       return
     }
 
-    // Validate Slack.
+    // Validate notifiers.
+    val reviewFormatter = ReviewFormatter(locale, timeZone)
     val slackConfigurationFile = directory.resolve("slack.json")
-    val slackConfiguration = slackConfigurationFile.takeIf { it.exists() }?.readText()?.let { json.parse(SlackConfiguration.serializer(), it) }
+    val slackConfiguration = slackConfigurationFile.takeIf { it.exists() }
+      ?.readText()
+      ?.let { json.parse(SlackNotifierConfiguration.serializer(), it) }
+
+    val telegramBotConfigurationFile = directory.resolve("telegram_bot.json")
+    val telegramBotConfiguration = telegramBotConfigurationFile.takeIf { it.exists() }
+      ?.readText()
+      ?.let { json.parse(TelegramBotNotifierConfiguration.serializer(), it) }
+
     val notifiers = listOfNotNull(
-      slackConfiguration?.let { SlackNotifier(it, timeZone) }
+      slackConfiguration?.let { SlackNotifier(it, reviewFormatter) },
+      telegramBotConfiguration?.let { TelegramBotNotifier(it, reviewFormatter) }
     )
 
     if (notifiers.isEmpty()) {
       logger.log("""🔴 No notifiers configured for $accountName. We support:""")
       logger.increaseIndent()
-      logger.log("""📱 Slack - Configure via $slackConfigurationFile - example:""")
-      logger.log(json.stringify(SlackConfiguration.serializer(), SlackConfiguration.EXAMPLE))
+
+      val supportedNotifiers = mapOf(
+        slackConfigurationFile to SlackNotifier(SlackNotifierConfiguration.EXAMPLE, reviewFormatter),
+        telegramBotConfigurationFile to TelegramBotNotifier(TelegramBotNotifierConfiguration.EXAMPLE, reviewFormatter)
+      )
+
+      supportedNotifiers.forEach { (file, notifier) ->
+        logger.log("""${notifier.emoji()} ${notifier.name()} - Configure via $file - example:""")
+        logger.log(notifier.configuration().asString(json))
+      }
       return
     }
 
@@ -155,7 +175,7 @@ import java.util.Locale
           notifiers.forEach { notifier ->
             logger.log("""${notifier.emoji()} Posting reviews to ${notifier.name()}""")
             reviews.forEach { review ->
-              notifier.notify(locale, app, store.name(), review)
+              notifier.notify(app, store.name(), review)
             }
           }
 
