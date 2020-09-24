@@ -8,16 +8,16 @@ import kotlin.test.assertEquals
 class ReviewFormatterTest {
   private val zoneId = ZoneId.of("Europe/Berlin")
 
-  @Test fun text1Star() {
+  @Test fun text1StarNoVersion() {
     val reviewFormatter = ReviewFormatter(Locale.GERMAN, zoneId)
 
     assertEquals(
       expected = """
-        ★☆☆☆☆ - Me - Android v1.0.0 - 23.09.2020 08:54:39
+        ★☆☆☆☆ - Me - Android - 23.09.2020 08:54:39
 
         Really nice app. 1 stars
         """.trimIndent(),
-      actual = reviewFormatter.asText("Android", review1Star)
+      actual = reviewFormatter.asText("Android", review1Star.copy(version = null))
     )
   }
 
@@ -35,16 +35,16 @@ class ReviewFormatterTest {
     )
   }
 
-  @Test fun markdown1Star() {
+  @Test fun markdown1StarVersionNull() {
     val reviewFormatter = ReviewFormatter(Locale.GERMAN, zoneId)
 
     assertEquals(
       expected = """
         ★☆☆☆☆
         >Really nice app. 1 stars
-        von *Me* am _23.09.2020 08:54:39_ mit Version _1.0.0_
+        von *Me* am _23.09.2020 08:54:39_
         """.trimIndent(),
-      actual = reviewFormatter.asMarkdown(review1Star)
+      actual = reviewFormatter.asMarkdown(review1Star.copy(version = null))
     )
   }
 
