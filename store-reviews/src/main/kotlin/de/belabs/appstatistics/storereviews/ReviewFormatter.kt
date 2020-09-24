@@ -12,7 +12,13 @@ internal class ReviewFormatter(
 ) {
   fun asText(storeName: String, review: Review): String {
     val stringBuilder = StringBuilder()
-    stringBuilder.append("${review.ratingLine()} - ${review.author} - $storeName v${review.version} - ${review.date()}\n\n")
+    stringBuilder.append("${review.ratingLine()} - ${review.author} - $storeName")
+
+    if (review.version != null) {
+      stringBuilder.append(" v${review.version}")
+    }
+
+    stringBuilder.append(" - ${review.date()}\n\n")
 
     if (review.title != null) {
       stringBuilder.append(review.title).append("\n")
@@ -32,12 +38,17 @@ internal class ReviewFormatter(
 
     stringBuilder.append(">${review.content}\n")
 
-    stringBuilder.append(
-      when (locale) {
-        Locale.GERMAN, Locale.GERMANY -> "von *${review.author}* am _${review.date()}_ mit Version _${review.version}_"
-        else -> "by *${review.author}* on _${review.date()}_ with version _${review.version}_"
-      }
-    )
+    stringBuilder.append(when (locale) {
+      Locale.GERMAN, Locale.GERMANY -> "von *${review.author}* am _${review.date()}_"
+      else -> "by *${review.author}* on _${review.date()}_"
+    })
+
+    if (review.version != null) {
+      stringBuilder.append(when (locale) {
+        Locale.GERMAN, Locale.GERMANY -> " mit Version _${review.version}_"
+        else -> " with version _${review.version}_"
+      })
+    }
 
     return stringBuilder.toString()
   }
