@@ -1,12 +1,13 @@
 package de.belabs.appstatistics.storereviews
 
-import kotlinx.serialization.Decoder
-import kotlinx.serialization.Encoder
-import kotlinx.serialization.PrimitiveDescriptor
-import kotlinx.serialization.PrimitiveKind.LONG
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Serializer
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import java.time.Instant
 
 @Serializable internal data class Review(
@@ -20,8 +21,9 @@ import java.time.Instant
   @SerialName("updated") @Serializable(with = InstantSerializer::class) val updated: Instant
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializer(forClass = Instant::class) private object InstantSerializer {
-  override val descriptor get() = PrimitiveDescriptor("InstantSerializer", LONG)
+  override val descriptor get() = PrimitiveSerialDescriptor("InstantSerializer", PrimitiveKind.LONG)
 
   override fun deserialize(decoder: Decoder) = Instant.ofEpochMilli(decoder.decodeLong())
 

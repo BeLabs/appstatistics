@@ -4,25 +4,21 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
-import de.belabs.appstatistics.storereviews.notifier.Notifier
-import de.belabs.appstatistics.storereviews.notifier.SlackNotifier
-import de.belabs.appstatistics.storereviews.notifier.SlackNotifierConfiguration
-import de.belabs.appstatistics.storereviews.notifier.TelegramBotNotifier
-import de.belabs.appstatistics.storereviews.notifier.TelegramBotNotifierConfiguration
 import de.belabs.appstatistics.storereviews.store.AppleStore
 import de.belabs.appstatistics.storereviews.store.PlayStore
 import de.belabs.appstatistics.storereviews.store.Store
+import de.belabs.notifier.slack.SlackNotifier
+import de.belabs.notifier.telegrambot.TelegramBotNotifier
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
-import kotlinx.serialization.UnstableDefault
-import kotlinx.serialization.builtins.list
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonConfiguration
 import java.io.File
 import java.time.ZoneId
 import java.util.Locale
 
-@OptIn(UnstableDefault::class) internal class StoreReviews : CliktCommand() {
+internal class StoreReviews : CliktCommand() {
   private val directoryAppStatistics: File by option(help = "App statistics directory")
     .convert { File(it) }
     .default(File(System.getProperty("user.home")).resolve(".appstatistics"))
@@ -35,7 +31,11 @@ import java.util.Locale
     .convert { ZoneId.of(it) }
     .default(ZoneId.systemDefault())
 
-  private val json = Json(JsonConfiguration.Default.copy(prettyPrint = true))
+  @OptIn(ExperimentalSerializationApi::class)
+  private val json = Json {
+    prettyPrint = true
+    prettyPrintIndent = "  "
+  }
 
   private val logger = Logger()
 
@@ -72,12 +72,12 @@ import java.util.Locale
     // Validate apps.
     val appsFile = directory.resolve("apps.json")
     val appsJson = appsFile.takeIf { it.exists() }?.readText() ?: "[]"
-    val apps = json.parse(App.serializer().list, appsJson)
+    val apps = json.decodeFromString(ListSerializer(App.serializer()), appsJson)
 
     if (apps.isEmpty()) {
       logger.log("""🔴 $appsFile is missing or empty. Please configure your apps and re-run this script.""")
       logger.log("Here's an example:")
-      logger.log(json.stringify(App.serializer().list, listOf(App.EXAMPLE)))
+      logger.log(json.encodeToString(ListSerializer(App.serializer()), listOf(App.EXAMPLE)))
       return
     }
 
@@ -94,32 +94,33 @@ import java.util.Locale
     // Validate notifiers.
     val reviewFormatter = ReviewFormatter(locale, timeZone)
     val slackConfigurationFile = directory.resolve("slack.json")
-    val slackConfiguration = slackConfigurationFile.takeIf { it.exists() }
+    val slackNotifierConfiguration = slackConfigurationFile.takeIf { it.exists() }
       ?.readText()
-      ?.let { json.parse(SlackNotifierConfiguration.serializer(), it) }
+      ?.let { json.decodeFromString(JsonSlackNotifierConfiguration.serializer(), it) }
 
     val telegramBotConfigurationFile = directory.resolve("telegram_bot.json")
-    val telegramBotConfiguration = telegramBotConfigurationFile.takeIf { it.exists() }
+    val telegramBotNotifierConfiguration = telegramBotConfigurationFile.takeIf { it.exists() }
       ?.readText()
-      ?.let { json.parse(TelegramBotNotifierConfiguration.serializer(), it) }
+      ?.let { json.decodeFromString(JsonTelegramBotNotifierConfiguration.serializer(), it) }
 
-    val notifiers = listOfNotNull(
-      slackConfiguration?.let { SlackNotifier(it, reviewFormatter) },
-      telegramBotConfiguration?.let { TelegramBotNotifier(it, reviewFormatter) }
+    val notifiers = StoreReviewsNotifier(
+      reviewFormatter = reviewFormatter,
+      slackNotifierConfiguration = slackNotifierConfiguration,
+      telegramBotNotifierConfiguration = telegramBotNotifierConfiguration
     )
 
     if (notifiers.isEmpty()) {
-      logger.log("""🔴 No notifiers configured for $accountName. We support:""")
+      logger.log("""🔴 No notifiers configured for $accountName. We support the following:""")
       logger.increaseIndent()
 
       val supportedNotifiers = mapOf(
-        slackConfigurationFile to SlackNotifier(SlackNotifierConfiguration.EXAMPLE, reviewFormatter),
-        telegramBotConfigurationFile to TelegramBotNotifier(TelegramBotNotifierConfiguration.EXAMPLE, reviewFormatter)
+        slackConfigurationFile to SlackNotifier(JsonSlackNotifierConfiguration.EXAMPLE),
+        telegramBotConfigurationFile to TelegramBotNotifier(JsonTelegramBotNotifierConfiguration.EXAMPLE)
       )
 
       supportedNotifiers.forEach { (file, notifier) ->
         logger.log("""${notifier.emoji()} ${notifier.name()} - Configure via $file - example:""")
-        logger.log(notifier.configuration().asString(json))
+        logger.log(notifier.configuration.asString(json))
       }
       return
     }
@@ -138,7 +139,7 @@ import java.util.Locale
     )
   }
 
-  private suspend fun process(directory: File, apps: List<App>, stores: List<Store>, notifiers: List<Notifier>) {
+  private suspend fun process(directory: File, apps: List<App>, stores: List<Store>, notifiers: StoreReviewsNotifier) {
     val outputDirectory = directory.resolve("store-reviews/")
     outputDirectory.mkdirs()
 
@@ -156,7 +157,7 @@ import java.util.Locale
             val file = appOutput.resolve("${review.id}.json")
 
             if (!file.exists() || file.length() == 0L) {
-              file.writeText(json.stringify(Review.serializer(), review))
+              file.writeText(json.encodeToString(Review.serializer(), review))
               review
             } else {
               null
@@ -171,14 +172,7 @@ import java.util.Locale
 
         if (reviews.isNotEmpty()) {
           logger.increaseIndent()
-
-          notifiers.forEach { notifier ->
-            val reviewFilter = notifier.configuration().reviewFilter
-            val filteredReviews = reviews.filter { reviewFilter.matches(it) }
-            logger.log("""${notifier.emoji()} Posting ${filteredReviews.size} reviews to ${notifier.name()}""")
-            filteredReviews.forEach { review -> notifier.notify(app, store.name(), review) }
-          }
-
+          notifiers.notify(logger, app, store.name(), reviews)
           logger.decreaseIndent()
         }
 

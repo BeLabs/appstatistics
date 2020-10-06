@@ -2,7 +2,7 @@ plugins {
   kotlin("jvm")
   kotlin("plugin.serialization")
   application
-  id("com.github.johnrengelman.shadow") version "5.0.0"
+  id("com.github.johnrengelman.shadow") version "6.0.0"
 }
 
 application {
@@ -19,15 +19,21 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 }
 
 dependencies {
+  api(project(":notifier-slack"))
+  api(project(":notifier-telegram-bot"))
+}
+
+dependencies {
   implementation("com.github.ajalt:clikt:2.8.0")
 
-  implementation("com.google.apis:google-api-services-androidpublisher:v3-rev20200817-1.30.10")
-  implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.20.0")
+  implementation("com.google.apis:google-api-services-androidpublisher:v3-rev20200927-1.30.10")
+  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.0.0-RC2")
 
-  val ktor = "1.3.2"
+  val ktor = "1.4.1"
   implementation("io.ktor:ktor-client-core-jvm:$ktor")
-  implementation("io.ktor:ktor-client-logging-jvm:$ktor")
   implementation("io.ktor:ktor-client-okhttp:$ktor")
+}
 
+dependencies {
   testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
 }
