@@ -1,6 +1,5 @@
 package de.belabs.appstatistics.storereviews
 
-import de.belabs.appstatistics.storereviews.notifier.NotifierReviewFilter
 import java.util.Locale
 
 internal fun NotifierReviewFilter?.matches(review: Review) =

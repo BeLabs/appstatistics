@@ -1,6 +1,5 @@
 package de.belabs.appstatistics.storereviews
 
-import de.belabs.appstatistics.storereviews.notifier.NotifierReviewFilter
 import org.junit.Test
 import kotlin.test.assertEquals
 
