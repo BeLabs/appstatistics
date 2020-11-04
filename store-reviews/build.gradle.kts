@@ -2,7 +2,7 @@ plugins {
   kotlin("jvm")
   kotlin("plugin.serialization")
   application
-  id("com.github.johnrengelman.shadow") version "6.0.0"
+  id("com.github.johnrengelman.shadow") version "6.1.0"
 }
 
 application {
@@ -26,8 +26,8 @@ dependencies {
 dependencies {
   implementation("com.github.ajalt:clikt:2.8.0")
 
-  implementation("com.google.apis:google-api-services-androidpublisher:v3-rev20200927-1.30.10")
-  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.0.0-RC2")
+  implementation("com.google.apis:google-api-services-androidpublisher:v3-rev20201022-1.30.10")
+  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.0.1")
 
   val ktor = "1.4.1"
   implementation("io.ktor:ktor-client-core-jvm:$ktor")
