@@ -21,7 +21,7 @@ internal class ReviewFormatter(
     stringBuilder.append(" - ${review.date()}\n\n")
 
     if (review.title != null) {
-      stringBuilder.append(review.title).append("\n")
+      stringBuilder.append(review.title).append("\n\n")
     }
 
     stringBuilder.append(review.content)

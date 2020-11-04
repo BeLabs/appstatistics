@@ -29,6 +29,7 @@ class ReviewFormatterTest {
         ★★★★★ - Me - iOS v1.0.0 - Sep 23, 2020 8:54:39 AM
 
         5 Stars title
+
         Really nice app. 5 stars
         """.trimIndent(),
       actual = reviewFormatter.asText("iOS", review5Stars)
