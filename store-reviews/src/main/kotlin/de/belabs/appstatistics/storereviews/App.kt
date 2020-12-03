@@ -5,8 +5,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable internal data class App(
   @SerialName("name") val name: String,
-  @SerialName("android_package_name") val androidPackageName: String?,
-  @SerialName("apple_id") val appleId: String?,
+  @SerialName("android_package_name") val androidPackageName: String? = null,
+  @SerialName("apple_id") val appleId: String? = null,
   @SerialName("apple_number_of_pages_to_check") val appleNumberOfPagesToCheck: Int = 5,
   @SerialName("apple_languages_to_check") val appleLanguagesToCheck: List<String> = listOf("US", "DE")
 ) {
