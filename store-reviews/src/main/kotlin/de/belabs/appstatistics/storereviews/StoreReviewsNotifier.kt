@@ -9,9 +9,11 @@ import de.belabs.notifier.telegrambot.TelegramBotNotifierPayload
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.io.File
 import java.util.Locale
 
 internal class StoreReviewsNotifier(
+  private val storeReviewsDirectory: File,
   private val reviewFormatter: ReviewFormatter,
   private val slackNotifierConfiguration: JsonSlackNotifierConfiguration?,
   private val telegramBotNotifierConfiguration: JsonTelegramBotNotifierConfiguration?
@@ -21,30 +23,42 @@ internal class StoreReviewsNotifier(
   suspend fun notify(logger: Logger, app: App, storeName: String, reviews: List<Review>) {
     slackNotifierConfiguration?.let {
       val notifier = SlackNotifier(it)
-      val filteredReviews = reviews.filter { review -> it.reviewFilter.matches(review) }
+      val filteredReviews = reviews.filter { review -> it.reviewFilter.matches(review) && !storeReviewsDirectory.resolve(".slack-${review.id}").exists() }
 
       logger.log("""${notifier.emoji()} Posting ${filteredReviews.size} reviews to ${notifier.name()}""")
 
       filteredReviews.forEach { review ->
-        notifier.notify(SlackNotifierPayload(
-          iconEmoji = notifier.configuration.emoji ?: ":${app.name.toLowerCase(Locale.ROOT)}:",
-          username = notifier.configuration.username ?: "${app.name} ($storeName)",
-          text = reviewFormatter.asMarkdown(review)
-        ))
+        try {
+          notifier.notify(SlackNotifierPayload(
+            iconEmoji = notifier.configuration.emoji ?: ":${app.name.toLowerCase(Locale.ROOT)}:",
+            username = notifier.configuration.username ?: "${app.name} ($storeName)",
+            text = reviewFormatter.asMarkdown(review)
+          ))
+
+          storeReviewsDirectory.resolve(".${review.id}-slack").writeText("")
+        } catch (throwable: Throwable) {
+          throw throwable
+        }
       }
     }
 
     telegramBotNotifierConfiguration?.let {
       val notifier = TelegramBotNotifier(it)
-      val filteredReviews = reviews.filter { review -> it.reviewFilter.matches(review) }
+      val filteredReviews = reviews.filter { review -> it.reviewFilter.matches(review) && !storeReviewsDirectory.resolve(".telegram-${review.id}").exists() }
 
       logger.log("""${notifier.emoji()} Posting ${filteredReviews.size} reviews to ${notifier.name()}""")
 
       filteredReviews.forEach { review ->
-        notifier.notify(TelegramBotNotifierPayload(
-          chatId = notifier.configuration.chatId,
-          text = reviewFormatter.asText(storeName, review)
-        ))
+        try {
+          notifier.notify(TelegramBotNotifierPayload(
+            chatId = notifier.configuration.chatId,
+            text = reviewFormatter.asText(storeName, review)
+          ))
+
+          storeReviewsDirectory.resolve(".${review.id}-telegram").writeText("")
+        } catch (throwable: Throwable) {
+          throw throwable
+        }
       }
     }
   }
