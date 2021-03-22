@@ -103,7 +103,11 @@ internal class StoreReviews : CliktCommand() {
       ?.readText()
       ?.let { json.decodeFromString(JsonTelegramBotNotifierConfiguration.serializer(), it) }
 
+    val storeReviewsDirectory = directory.resolve(".notifiers")
+    storeReviewsDirectory.mkdirs()
+
     val notifiers = StoreReviewsNotifier(
+      storeReviewsDirectory = storeReviewsDirectory,
       reviewFormatter = reviewFormatter,
       slackNotifierConfiguration = slackNotifierConfiguration,
       telegramBotNotifierConfiguration = telegramBotNotifierConfiguration
