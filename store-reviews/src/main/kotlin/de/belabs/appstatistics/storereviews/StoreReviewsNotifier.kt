@@ -1,5 +1,6 @@
 package de.belabs.appstatistics.storereviews
 
+import de.belabs.appstatistics.Logger
 import de.belabs.notifier.slack.SlackNotifier
 import de.belabs.notifier.slack.SlackNotifierConfiguration
 import de.belabs.notifier.slack.SlackNotifierPayload

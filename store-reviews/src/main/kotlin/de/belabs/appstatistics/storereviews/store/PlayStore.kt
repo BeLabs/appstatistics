@@ -38,7 +38,7 @@ import java.time.Instant
             version = comment.userComment.appVersionName,
             language = comment.userComment.reviewerLanguage,
             author = it.authorName ?: "?",
-            updated = Instant.ofEpochSecond(comment.userComment.lastModified.seconds)
+            updated = Instant.ofEpochSecond(comment.userComment.lastModified.seconds),
           )
         }
     }
