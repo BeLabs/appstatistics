@@ -1,6 +1,11 @@
 # appstatistics
 
-Some Kotlin Code to gather some appstatistics from the App Store & Play Store. Currently, there's only support for Reviews but this will likely change.
+Some Kotlin Code to gather some appstatistics from the App Store & Play Store.
+
+There's support for:
+
+- [store-reviews](#store-reviews)
+- [inapp-products](#inapp-products)
 
 ## store-reviews
 
@@ -22,6 +27,19 @@ Alternatively, you can also build a fat Jar using `./gradlew store-reviews:shado
 #### Telegram Bot Example
 
 ![store-reviews/notifier-telegram-bot.png](store-reviews/notifier-telegram-bot.png)
+
+## inapp-products
+
+- Uses the Google API to get inapp products
+- Inapp products are stored locally
+
+More support is coming.
+
+### Get started
+
+Check out the project and run `./gradlew inapp-products:run`. This will give you step by step instructions.
+
+Alternatively, you can also build a fat Jar using `./gradlew inapp-products:shadowJar` and run it via `java -jar inapp-products/build/libs/inapp-products-all.jar`.
 
 # License
 

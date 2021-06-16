@@ -1,6 +1,6 @@
-package de.belabs.appstatistics.storereviews
+package de.belabs.appstatistics
 
-internal class Logger {
+class Logger {
   private var indent = 0
 
   fun increaseIndent() {

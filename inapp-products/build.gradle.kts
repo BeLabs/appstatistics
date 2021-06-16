@@ -6,8 +6,8 @@ plugins {
 }
 
 application {
-  applicationName = "store-reviews"
-  mainClassName = "de.belabs.appstatistics.storereviews.MainKt"
+  applicationName = "inapp-products"
+  mainClassName = "de.belabs.appstatistics.inappproducts.MainKt"
 }
 
 defaultTasks("run")
@@ -20,8 +20,6 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 
 dependencies {
   api(project(":core"))
-  api(project(":notifier-slack"))
-  api(project(":notifier-telegram-bot"))
 }
 
 dependencies {
