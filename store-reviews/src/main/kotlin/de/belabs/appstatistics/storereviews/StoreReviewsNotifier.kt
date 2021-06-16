@@ -13,17 +13,21 @@ import java.io.File
 import java.util.Locale
 
 internal class StoreReviewsNotifier(
-  private val storeReviewsDirectory: File,
+  private val directory: File,
   private val reviewFormatter: ReviewFormatter,
   private val slackNotifierConfiguration: JsonSlackNotifierConfiguration?,
   private val telegramBotNotifierConfiguration: JsonTelegramBotNotifierConfiguration?
 ) {
+  init {
+    directory.mkdirs()
+  }
+
   fun isEmpty() = slackNotifierConfiguration == null && telegramBotNotifierConfiguration == null
 
   suspend fun notify(logger: Logger, app: App, storeName: String, reviews: List<Review>) {
     slackNotifierConfiguration?.let {
       val notifier = SlackNotifier(it)
-      val filteredReviews = reviews.filter { review -> it.reviewFilter.matches(review) && !storeReviewsDirectory.resolve(".slack-${review.id}").exists() }
+      val filteredReviews = reviews.filter { review -> it.reviewFilter.matches(review) && !directory.resolve(".slack-${review.id}").exists() }
 
       logger.log("""${notifier.emoji()} Posting ${filteredReviews.size} reviews to ${notifier.name()}""")
 
@@ -35,7 +39,7 @@ internal class StoreReviewsNotifier(
             text = reviewFormatter.asMarkdown(review)
           ))
 
-          storeReviewsDirectory.resolve(".${review.id}-slack").writeText("")
+          directory.resolve(".${review.id}-slack").writeText("")
         } catch (throwable: Throwable) {
           throw throwable
         }
@@ -44,7 +48,7 @@ internal class StoreReviewsNotifier(
 
     telegramBotNotifierConfiguration?.let {
       val notifier = TelegramBotNotifier(it)
-      val filteredReviews = reviews.filter { review -> it.reviewFilter.matches(review) && !storeReviewsDirectory.resolve(".telegram-${review.id}").exists() }
+      val filteredReviews = reviews.filter { review -> it.reviewFilter.matches(review) && !directory.resolve(".telegram-${review.id}").exists() }
 
       logger.log("""${notifier.emoji()} Posting ${filteredReviews.size} reviews to ${notifier.name()}""")
 
@@ -55,7 +59,7 @@ internal class StoreReviewsNotifier(
             text = reviewFormatter.asText(storeName, review)
           ))
 
-          storeReviewsDirectory.resolve(".${review.id}-telegram").writeText("")
+          directory.resolve(".${review.id}-telegram").writeText("")
         } catch (throwable: Throwable) {
           throw throwable
         }

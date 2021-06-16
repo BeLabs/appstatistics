@@ -69,8 +69,11 @@ internal class StoreReviews : CliktCommand() {
     logger.log("""📒️ Running $accountName""")
     logger.increaseIndent()
 
+    val storeReviewsDirectory = directory.resolve("store-reviews/")
+    storeReviewsDirectory.mkdirs()
+
     // Validate apps.
-    val appsFile = directory.resolve("apps.json")
+    val appsFile = storeReviewsDirectory.resolve("apps.json")
     val appsJson = appsFile.takeIf { it.exists() }?.readText() ?: "[]"
     val apps = json.decodeFromString(ListSerializer(App.serializer()), appsJson)
 
@@ -93,24 +96,21 @@ internal class StoreReviews : CliktCommand() {
 
     // Validate notifiers.
     val reviewFormatter = ReviewFormatter(locale, timeZone)
-    val slackConfigurationFile = directory.resolve("slack.json")
+    val slackConfigurationFile = storeReviewsDirectory.resolve("slack.json")
     val slackNotifierConfiguration = slackConfigurationFile.takeIf { it.exists() }
       ?.readText()
       ?.let { json.decodeFromString(JsonSlackNotifierConfiguration.serializer(), it) }
 
-    val telegramBotConfigurationFile = directory.resolve("telegram_bot.json")
+    val telegramBotConfigurationFile = storeReviewsDirectory.resolve("telegram_bot.json")
     val telegramBotNotifierConfiguration = telegramBotConfigurationFile.takeIf { it.exists() }
       ?.readText()
       ?.let { json.decodeFromString(JsonTelegramBotNotifierConfiguration.serializer(), it) }
 
-    val storeReviewsDirectory = directory.resolve(".notifiers")
-    storeReviewsDirectory.mkdirs()
-
     val notifiers = StoreReviewsNotifier(
-      storeReviewsDirectory = storeReviewsDirectory,
+      directory = storeReviewsDirectory.resolve(".notifiers"),
       reviewFormatter = reviewFormatter,
       slackNotifierConfiguration = slackNotifierConfiguration,
-      telegramBotNotifierConfiguration = telegramBotNotifierConfiguration
+      telegramBotNotifierConfiguration = telegramBotNotifierConfiguration,
     )
 
     if (notifiers.isEmpty()) {
@@ -136,17 +136,14 @@ internal class StoreReviews : CliktCommand() {
     )
 
     process(
-      directory = directory,
+      outputDirectory = storeReviewsDirectory,
       apps = apps,
       stores = stores,
-      notifiers = notifiers
+      notifiers = notifiers,
     )
   }
 
-  private suspend fun process(directory: File, apps: List<App>, stores: List<Store>, notifiers: StoreReviewsNotifier) {
-    val outputDirectory = directory.resolve("store-reviews/")
-    outputDirectory.mkdirs()
-
+  private suspend fun process(outputDirectory: File, apps: List<App>, stores: List<Store>, notifiers: StoreReviewsNotifier) {
     apps.forEach { app ->
       stores.forEach { store ->
         val appOutput = outputDirectory.resolve("${app.name}/${store.name()}")
