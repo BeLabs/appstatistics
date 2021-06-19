@@ -1,7 +1,9 @@
 package de.belabs.appstatistics.inappproducts
 
+import com.google.api.services.androidpublisher.model.InAppProduct
 import de.belabs.appstatistics.CoreCommand
 import de.belabs.appstatistics.inappproducts.store.PlayStore
+import de.belabs.appstatistics.inappproducts.store.Store
 import de.belabs.appstatistics.jsonPretty
 import kotlinx.serialization.builtins.ListSerializer
 import java.io.File
@@ -41,22 +43,71 @@ internal class InAppProducts : CoreCommand() {
 
     apps.forEach { app ->
       stores.forEach { store ->
-        logger.log("""⭐ Querying ${store.name()} ${app.name} products""")
-        logger.increaseIndent()
-
         val appOutput = directory.resolve("${app.name}/${store.name()}")
         appOutput.mkdirs()
-        val inAppProducts = store.inAppProducts(app)
 
-        inAppProducts.forEach {
-          val file = appOutput.resolve("${it.sku}.json")
-          logger.log("""✍️ Writing $file""")
-          file.writeText(it.toPrettyString())
-        }
+        query(store, app, appOutput)
 
-        logger.log()
-        logger.decreaseIndent()
+        val createDirectory = appOutput.resolve("create/")
+        createDirectory.mkdirs()
+
+        val inappProductsToCreate = createDirectory.listFiles { current, name ->
+          val file = current.resolve(name)
+          file.extension == "json" && file.length() > 0
+        }.orEmpty().toList()
+
+        create(store, app, appOutput, inappProductsToCreate)
       }
     }
+  }
+
+  private suspend fun create(
+    store: Store,
+    app: App,
+    appOutput: File,
+    inappProducts: List<File>,
+  ) {
+    if (inappProducts.isNotEmpty()) {
+      logger.log("""🚧 Found ${inappProducts.size} product(s) for ${store.name()} ${app.name}""")
+      logger.increaseIndent()
+
+      inappProducts.forEach {
+        val identifier = it.name
+        try {
+          logger.log("Trying to create $identifier")
+          val inAppProduct = store.create(app, it)
+          logger.log("✅ Successfully created $identifier")
+          appOutput.write(inAppProduct)
+          it.delete()
+        } catch (throwable: Throwable) {
+          logger.log("🔴 Failed creating $identifier")
+          throwable.printStackTrace()
+        }
+      }
+
+      logger.log()
+      logger.decreaseIndent()
+    }
+  }
+
+  private suspend fun query(
+    store: Store,
+    app: App,
+    appOutput: File,
+  ) {
+    logger.log("""🔍 Querying ${store.name()} ${app.name} products""")
+    logger.increaseIndent()
+
+    store.inAppProducts(app)
+      .forEach { appOutput.write(it) }
+
+    logger.log()
+    logger.decreaseIndent()
+  }
+
+  fun File.write(inAppProduct: InAppProduct) {
+    val file = resolve("${inAppProduct.sku}.json")
+    logger.log("""✍️ Writing $file""")
+    file.writeText(inAppProduct.toPrettyString())
   }
 }
