@@ -31,4 +31,16 @@ import java.io.File
     return products.inappproduct
       .sortedBy { it.sku }
   }
+
+  override suspend fun create(
+    app: App,
+    inappProducts: File
+  ): InAppProduct {
+    val inappProduct = JacksonFactory.getDefaultInstance()
+      .fromString(inappProducts.readText(), InAppProduct::class.java)
+
+    return androidPublisher.inappproducts()
+      .insert(inappProduct.packageName, inappProduct)
+      .execute()
+  }
 }

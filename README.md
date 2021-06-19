@@ -31,7 +31,8 @@ Alternatively, you can also build a fat Jar using `./gradlew store-reviews:shado
 ## inapp-products
 
 - Uses the Google API to get inapp products
-- Inapp products are stored locally
+- Inapp products are retrieved & stored locally
+- Add new inapp products
 
 More support is coming.
 
