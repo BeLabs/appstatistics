@@ -28,8 +28,9 @@ import java.io.File
       .list(app.androidPackageName)
       .execute()
 
-    return products.inappproduct
-      .sortedBy { it.sku }
+    return products?.inappproduct
+      ?.sortedBy { it.sku }
+      .orEmpty()
   }
 
   override suspend fun create(
