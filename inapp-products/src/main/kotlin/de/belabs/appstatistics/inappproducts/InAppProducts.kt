@@ -98,8 +98,13 @@ internal class InAppProducts : CoreCommand() {
     logger.log("""🔍 Querying ${store.name()} ${app.name} products""")
     logger.increaseIndent()
 
-    store.inAppProducts(app)
-      .forEach { appOutput.write(it) }
+    val inAppProducts = store.inAppProducts(app)
+
+    if (inAppProducts.isEmpty()) {
+      logger.log("""⚠️ Found no in app products""")
+    }
+
+    inAppProducts.forEach { appOutput.write(it) }
 
     logger.log()
     logger.decreaseIndent()
@@ -107,7 +112,7 @@ internal class InAppProducts : CoreCommand() {
 
   fun File.write(inAppProduct: InAppProduct) {
     val file = resolve("${inAppProduct.sku}.json")
-    logger.log("""✍️ Writing $file""")
+    logger.log("""✍️ Writing ${inAppProduct.sku} to $file""")
     file.writeText(inAppProduct.toPrettyString())
   }
 }
