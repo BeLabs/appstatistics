@@ -40,6 +40,14 @@ import java.io.File
     val inappProduct = JacksonFactory.getDefaultInstance()
       .fromString(inappProducts.readText(), InAppProduct::class.java)
 
+    if (inappProduct.packageName != app.androidPackageName) {
+      throw UnsupportedOperationException("Package names differ. Expected \"${app.androidPackageName}\" Actual: \"${inappProduct.packageName}\"")
+    }
+
+    if (inappProducts.nameWithoutExtension != inappProduct.sku) {
+      throw UnsupportedOperationException("Sku's differ. Expected \"${inappProducts.nameWithoutExtension}\" Actual: \"${inappProduct.sku}\"")
+    }
+
     return androidPublisher.inappproducts()
       .insert(inappProduct.packageName, inappProduct)
       .execute()
