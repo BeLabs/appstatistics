@@ -2,12 +2,12 @@ plugins {
   kotlin("jvm")
   kotlin("plugin.serialization")
   application
-  id("com.github.johnrengelman.shadow") version "6.1.0"
+  id("com.github.johnrengelman.shadow") version Versions.shadowJar
 }
 
 application {
   applicationName = "store-reviews"
-  mainClassName = "de.belabs.appstatistics.storereviews.MainKt"
+  mainClass.set("de.belabs.appstatistics.storereviews.MainKt")
 }
 
 defaultTasks("run")

@@ -8,11 +8,9 @@ dependencies {
 }
 
 dependencies {
-  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.0.1")
-
-  val ktor = "1.4.1"
-  implementation("io.ktor:ktor-client-core-jvm:$ktor")
-  implementation("io.ktor:ktor-client-okhttp:$ktor")
+  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.kotlinSerialization}")
+  implementation("io.ktor:ktor-client-core-jvm:${Versions.ktor}")
+  implementation("io.ktor:ktor-client-okhttp:${Versions.ktor}")
 }
 
 dependencies {

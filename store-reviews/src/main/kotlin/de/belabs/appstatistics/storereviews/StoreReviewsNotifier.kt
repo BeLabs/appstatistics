@@ -35,7 +35,7 @@ internal class StoreReviewsNotifier(
       filteredReviews.forEach { review ->
         try {
           notifier.notify(SlackNotifierPayload(
-            iconEmoji = notifier.configuration.emoji ?: ":${app.name.toLowerCase(Locale.ROOT)}:",
+            iconEmoji = notifier.configuration.emoji ?: ":${app.name.lowercase()}:",
             username = notifier.configuration.username ?: "${app.name} ($storeName)",
             text = reviewFormatter.asMarkdown(review)
           ))

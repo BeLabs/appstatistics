@@ -4,6 +4,3 @@ include ':notifier'
 include ':notifier-slack'
 include ':notifier-telegram-bot'
 include ':store-reviews'
-
-// Required for Kotlin Multiplatform.
-enableFeaturePreview('GRADLE_METADATA')
