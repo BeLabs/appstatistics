@@ -2,12 +2,12 @@ plugins {
   kotlin("jvm")
   kotlin("plugin.serialization")
   application
-  id("com.github.johnrengelman.shadow") version "6.1.0"
+  id("com.github.johnrengelman.shadow") version Versions.shadowJar
 }
 
 application {
   applicationName = "inapp-products"
-  mainClassName = "de.belabs.appstatistics.inappproducts.MainKt"
+  mainClass.set("de.belabs.appstatistics.inappproducts.MainKt")
 }
 
 defaultTasks("run")
@@ -19,13 +19,12 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 }
 
 dependencies {
-  api("com.github.ajalt:clikt:2.8.0")
+  api("com.github.ajalt:clikt:${Versions.clikt}")
 
-  val ktor = "1.4.1"
-  api("io.ktor:ktor-client-core-jvm:$ktor")
-  api("io.ktor:ktor-client-okhttp:$ktor")
+  api("io.ktor:ktor-client-core-jvm:${Versions.ktor}")
+  api("io.ktor:ktor-client-okhttp:${Versions.ktor}")
 
-  api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.0.1")
+  api("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.kotlinSerialization}")
 
   api("com.google.apis:google-api-services-androidpublisher:v3-rev20201022-1.30.10")
 }
