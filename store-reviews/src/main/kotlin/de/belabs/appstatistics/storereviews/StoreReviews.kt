@@ -12,7 +12,10 @@ import de.belabs.notifier.slack.SlackNotifier
 import de.belabs.notifier.telegrambot.TelegramBotNotifier
 import kotlinx.serialization.builtins.ListSerializer
 import java.io.File
+import java.time.Instant
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
+import java.time.temporal.TemporalUnit
 import java.util.Locale
 
 internal class StoreReviews : CoreCommand() {
@@ -109,6 +112,15 @@ internal class StoreReviews : CoreCommand() {
 
         val appOutput = directory.resolve("${app.name}/${store.name()}")
         appOutput.mkdirs()
+
+        val unnotifiedReviews = notifiers.missing(appOutput.listFiles()
+          .orEmpty()
+          .filter { it.name.endsWith(".json") }
+          .map { it.nameWithoutExtension }
+        )
+          .map { jsonPretty.decodeFromString(Review.serializer(), appOutput.resolve("$it.json").readText()) }
+          .filter { notifiers.canNotify(it) && it.updated >= Instant.now().minus(10, ChronoUnit.DAYS) }
+
         val reviews = store.reviews(app)
           .sortedBy { it.updated }
           .mapNotNull { review ->
@@ -122,6 +134,15 @@ internal class StoreReviews : CoreCommand() {
             }
           }
 
+        // Unnotified Reviews.
+        if (unnotifiedReviews.isNotEmpty()) {
+          logger.log("""⚠️ ${unnotifiedReviews.size} unnotified reviews""")
+          logger.increaseIndent()
+          notifiers.notify(logger, app, store.name(), unnotifiedReviews)
+          logger.decreaseIndent()
+        }
+
+        // New Reviews.
         val reviewsEmoji = when {
           reviews.isEmpty() -> """😔"""
           else -> """💌"""

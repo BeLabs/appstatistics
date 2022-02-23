@@ -18,7 +18,7 @@ import java.time.Instant
   @SerialName("rating") val rating: Int,
   @SerialName("version") val version: String? = null,
   @SerialName("author") val author: String,
-  @SerialName("updated") @Serializable(with = InstantSerializer::class) val updated: Instant
+  @SerialName("updated") @Serializable(with = InstantSerializer::class) val updated: Instant,
 )
 
 @OptIn(ExperimentalSerializationApi::class)
