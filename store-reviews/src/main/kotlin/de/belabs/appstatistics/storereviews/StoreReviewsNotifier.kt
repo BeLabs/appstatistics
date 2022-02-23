@@ -25,7 +25,24 @@ internal class StoreReviewsNotifier(
 
   fun isEmpty() = slackNotifierConfiguration == null && telegramBotNotifierConfiguration == null
 
+  fun missing(reviewIds: List<String>): List<String> {
+    return reviewIds.filter { reviewId ->
+      (slackNotifierConfiguration != null && !directory.resolve(".$reviewId-slack").exists())
+        || (telegramBotNotifierConfiguration != null && !directory.resolve(".$reviewId-telegram").exists())
+    }
+  }
+
+  fun canNotify(review: Review): Boolean {
+    return (slackNotifierConfiguration != null && slackNotifierConfiguration.reviewFilter.matches(review))
+      || (telegramBotNotifierConfiguration != null && telegramBotNotifierConfiguration.reviewFilter.matches(review))
+  }
+
   suspend fun notify(logger: Logger, app: App, storeName: String, reviews: List<Review>) {
+    notifySlack(logger, app, storeName, reviews)
+    notifyTelegram(logger, storeName, reviews)
+  }
+
+  private suspend fun notifySlack(logger: Logger, app: App, storeName: String, reviews: List<Review>) {
     slackNotifierConfiguration?.let {
       val notifier = SlackNotifier(it)
       val filteredReviews = reviews.filter { review -> it.reviewFilter.matches(review) && !directory.resolve(".slack-${review.id}").exists() }
@@ -46,7 +63,9 @@ internal class StoreReviewsNotifier(
         }
       }
     }
+  }
 
+  private suspend fun notifyTelegram(logger: Logger, storeName: String, reviews: List<Review>) {
     telegramBotNotifierConfiguration?.let {
       val notifier = TelegramBotNotifier(it)
       val filteredReviews = reviews.filter { review -> it.reviewFilter.matches(review) && !directory.resolve(".telegram-${review.id}").exists() }
