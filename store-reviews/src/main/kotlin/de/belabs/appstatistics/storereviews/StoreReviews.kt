@@ -15,7 +15,6 @@ import java.io.File
 import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
-import java.time.temporal.TemporalUnit
 import java.util.Locale
 
 internal class StoreReviews : CoreCommand() {
@@ -113,10 +112,11 @@ internal class StoreReviews : CoreCommand() {
         val appOutput = directory.resolve("${app.name}/${store.name()}")
         appOutput.mkdirs()
 
-        val unnotifiedReviews = notifiers.missing(appOutput.listFiles()
-          .orEmpty()
-          .filter { it.name.endsWith(".json") }
-          .map { it.nameWithoutExtension }
+        val unnotifiedReviews = notifiers.missing(
+          appOutput.listFiles()
+            .orEmpty()
+            .filter { it.name.endsWith(".json") }
+            .map { it.nameWithoutExtension }
         )
           .map { jsonPretty.decodeFromString(Review.serializer(), appOutput.resolve("$it.json").readText()) }
           .filter { notifiers.canNotify(it) && it.updated >= Instant.now().minus(10, ChronoUnit.DAYS) }

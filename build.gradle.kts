@@ -10,6 +10,32 @@ buildscript {
   }
 }
 
+plugins {
+  id("com.vanniktech.code.quality.tools") version "0.21.0"
+}
+
+rootProject.configure<com.vanniktech.code.quality.tools.CodeQualityToolsPluginExtension> {
+  checkstyle {
+    enabled = false // Kotlin only.
+  }
+  pmd {
+    enabled = false // Kotlin only.
+  }
+  ktlint {
+    toolVersion = "0.45.2"
+  }
+  detekt {
+    enabled = false // Don't want this.
+  }
+  cpd {
+    enabled = false // Kotlin only.
+  }
+  lint {
+    checkAllWarnings = true
+    textReport = true // https://github.com/vanniktech/gradle-code-quality-tools-plugin/pull/227
+  }
+}
+
 allprojects {
   repositories {
     google()
