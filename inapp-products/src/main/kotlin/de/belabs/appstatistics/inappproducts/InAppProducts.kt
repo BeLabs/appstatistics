@@ -320,7 +320,7 @@ internal class InAppProducts : CoreCommand() {
     val name: String,
     val value: String,
   ) {
-    override fun toString() = """<string name="$name">$value</string>"""
+    override fun toString() = """<string name="$name">${value.xmlEscaped()}</string>"""
   }
 
   companion object {
@@ -358,3 +358,5 @@ internal class InAppProducts : CoreCommand() {
 // Not the best but does the job.
 private fun String.snakecase() = replace(" ", "_")
   .lowercase()
+
+private fun String.xmlEscaped() = replace("'", "\\'")
