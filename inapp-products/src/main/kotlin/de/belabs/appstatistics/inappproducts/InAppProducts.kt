@@ -114,15 +114,94 @@ internal class InAppProducts : CoreCommand() {
     logger.increaseIndent()
 
     val inAppProducts = store.inAppProducts(app)
-
-    if (inAppProducts.isEmpty()) {
+    val hasInAppProducts = inAppProducts.isNotEmpty()
+    if (!hasInAppProducts) {
       logger.log("""⚠️ Found no in app products""")
     }
 
     writeFiles(appOutput, inAppProducts)
 
+    if (hasInAppProducts) {
+      writeStringsFile(app, appOutput, inAppProducts)
+    }
+
     logger.log()
     logger.decreaseIndent()
+  }
+
+  private fun writeStringsFile(
+    app: App,
+    appOutput: File,
+    inAppProducts: List<InAppProduct>,
+  ) {
+    val stringsDirectory = appOutput.resolve("strings/")
+    stringsDirectory.delete()
+
+    inAppProducts.flatMap { inAppProduct ->
+      inAppProduct.listings.map { (locale, inAppProductListing) ->
+        LocalisedInAppProduct(
+          sku = inAppProduct.sku,
+          locale = locale,
+          title = inAppProductListing.title,
+          description = inAppProductListing.description,
+        )
+      }
+    }
+      .groupBy { it.locale }
+      .forEach { (locale, localisedInAppProducts) ->
+        val directory = stringsDirectory.resolve(stringsDirectoryFrom(locale))
+        directory.mkdirs()
+
+        val strings = localisedInAppProducts.sortedBy { it.sku }
+          .flatMap {
+            val prefix = app.name.snakecase()
+            listOf(
+              """<string name="${prefix}_${it.sku}_description">${it.description}</string>""",
+              """<string name="${prefix}_${it.sku}_title">${it.title}</string>""",
+            )
+          }
+          .joinToString(separator = "\n") { "  $it" }
+
+        directory.resolve("inapp-products.xml").writeText(
+          """
+          |<?xml version="1.0" encoding="utf-8"?>
+          |<resources>
+          |$strings
+          |</resources>
+          |
+          """.trimMargin()
+        )
+      }
+
+    logger.log("""🎈️ Wrote all titles & descriptions of all in app products to $stringsDirectory""")
+  }
+
+  private fun stringsDirectoryFrom(locale: String) = when (locale) {
+    "en-US" -> "values"
+    "ar" -> "values-ar"
+    "bg" -> "values-bg"
+    "de-DE" -> "values-de"
+    "el-GR" -> "values-el"
+    "es-ES" -> "values-es"
+    "fi-FI" -> "values-fi"
+    "fr-FR" -> "values-fr"
+    "hu-HU" -> "values-hu"
+    "id" -> "values-in"
+    "it-IT" -> "values-it"
+    "iw-IL" -> "values-iw"
+    "nl-NL" -> "values-nl"
+    "no-NO" -> "values-no"
+    "pt-BR" -> "values-pt"
+    "pt-PT" -> "values-pt-rBR"
+    "ro" -> "values-ro"
+    "ru-RU" -> "values-ru"
+    "sv-SE" -> "values-sv"
+    "tr-TR" -> "values-tr"
+    "uk" -> "values-uk"
+    "vi" -> "values-vi"
+    "zh-CN" -> "values-zh-rCN"
+    "zh-TW" -> "values-zh-rTW"
+    else -> error("Unsupported locale $locale which can't be mapped into a strings directory")
   }
 
   private fun writeFiles(
@@ -149,4 +228,15 @@ internal class InAppProducts : CoreCommand() {
     file.writeText(inAppProduct.toPrettyString())
     return file
   }
+
+  private data class LocalisedInAppProduct(
+    val sku: String,
+    val locale: String,
+    val title: String,
+    val description: String,
+  )
 }
+
+// Not the best but does the job.
+private fun String.snakecase() = replace(" ", "_")
+  .lowercase()
