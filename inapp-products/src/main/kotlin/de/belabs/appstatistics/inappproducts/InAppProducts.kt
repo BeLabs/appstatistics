@@ -104,15 +104,34 @@ internal class InAppProducts : CoreCommand() {
       logger.log("""⚠️ Found no in app products""")
     }
 
-    inAppProducts.forEach { appOutput.write(it) }
+    writeFiles(appOutput, inAppProducts)
 
     logger.log()
     logger.decreaseIndent()
   }
 
-  fun File.write(inAppProduct: InAppProduct) {
+  private fun writeFiles(
+    appOutput: File,
+    inAppProducts: List<InAppProduct>,
+  ) {
+    val deletedFiles = appOutput.listFiles { file -> file.extension == "json" }.toSet()
+    deletedFiles.forEach { it.delete() }
+
+    val createdFiles = inAppProducts.map { inAppProduct -> appOutput.write(inAppProduct) }.toSet()
+    val fileDiff = deletedFiles - createdFiles
+
+    if (fileDiff.isNotEmpty()) {
+      fileDiff.sortedBy { it }
+        .forEach {
+          logger.log("""🗑️️ Deleted as no longer in use: $it""")
+        }
+    }
+  }
+
+  private fun File.write(inAppProduct: InAppProduct): File {
     val file = resolve("${inAppProduct.sku}.json")
     logger.log("""✍️ Writing ${inAppProduct.sku} to $file""")
     file.writeText(inAppProduct.toPrettyString())
+    return file
   }
 }
