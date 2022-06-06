@@ -8,5 +8,6 @@ internal interface Store {
   fun name(): String
 
   suspend fun inAppProducts(app: App): List<InAppProduct>
-  suspend fun create(app: App, inappProducts: File): InAppProduct
+  suspend fun create(app: App, file: File): InAppProduct
+  suspend fun edit(app: App, file: File): InAppProduct
 }

@@ -45,20 +45,29 @@ internal class InAppProducts : CoreCommand() {
       val appDirectory = directory.resolve(app.name)
 
       stores.forEach { store ->
-        val appOutput = appDirectory.resolve(store.name())
-        appOutput.mkdirs()
+        val appOutput = appDirectory.resolve(store.name()).apply { mkdirs() }
+
+        create(
+          store,
+          app,
+          appOutput,
+          appOutput.resolve("create/").apply { mkdirs() }
+            .listFiles { file -> file.extension == "json" && file.length() > 0 }
+            .orEmpty()
+            .toList(),
+        )
+
+        edit(
+          store,
+          app,
+          appOutput,
+          appOutput.resolve("edit/").apply { mkdirs() }
+            .listFiles { file -> file.extension == "json" && file.length() > 0 }
+            .orEmpty()
+            .toList(),
+        )
 
         query(store, app, appOutput)
-
-        val createDirectory = appOutput.resolve("create/")
-        createDirectory.mkdirs()
-
-        val inappProductsToCreate = createDirectory.listFiles { current, name ->
-          val file = current.resolve(name)
-          file.extension == "json" && file.length() > 0
-        }.orEmpty().toList()
-
-        create(store, app, appOutput, inappProductsToCreate)
       }
 
       appDirectory
@@ -84,7 +93,7 @@ internal class InAppProducts : CoreCommand() {
     inAppProducts: List<File>,
   ) {
     if (inAppProducts.isNotEmpty()) {
-      logger.log("""🚧 Found ${inAppProducts.size} product(s) for ${store.name()} ${app.name}""")
+      logger.log("""🚧 Found ${inAppProducts.size} creatable product(s) for ${store.name()} ${app.name}""")
       logger.increaseIndent()
 
       inAppProducts.forEach {
@@ -97,6 +106,35 @@ internal class InAppProducts : CoreCommand() {
           it.delete()
         } catch (throwable: Throwable) {
           logger.log("🔴 Failed creating $identifier")
+          throwable.printStackTrace()
+        }
+      }
+
+      logger.log()
+      logger.decreaseIndent()
+    }
+  }
+
+  private suspend fun edit(
+    store: Store,
+    app: App,
+    appOutput: File,
+    inAppProducts: List<File>,
+  ) {
+    if (inAppProducts.isNotEmpty()) {
+      logger.log("""🚧 Found ${inAppProducts.size} editable product(s) for ${store.name()} ${app.name}""")
+      logger.increaseIndent()
+
+      inAppProducts.forEach {
+        val identifier = it.name
+        try {
+          logger.log("Trying to edit $identifier")
+          val inAppProduct = store.edit(app, it)
+          logger.log("✅ Successfully edited $identifier")
+          appOutput.write(inAppProduct)
+          it.delete()
+        } catch (throwable: Throwable) {
+          logger.log("🔴 Failed editing $identifier")
           throwable.printStackTrace()
         }
       }
