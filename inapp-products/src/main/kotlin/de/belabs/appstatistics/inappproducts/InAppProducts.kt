@@ -41,9 +41,11 @@ internal class InAppProducts : CoreCommand() {
       PlayStore(playStoreFile),
     )
 
-    apps.forEach { app ->
+    val appDirectories = apps.map { app ->
+      val appDirectory = directory.resolve(app.name)
+
       stores.forEach { store ->
-        val appOutput = directory.resolve("${app.name}/${store.name()}")
+        val appOutput = appDirectory.resolve(store.name())
         appOutput.mkdirs()
 
         query(store, app, appOutput)
@@ -58,6 +60,19 @@ internal class InAppProducts : CoreCommand() {
 
         create(store, app, appOutput, inappProductsToCreate)
       }
+
+      appDirectory
+    }.toSet()
+
+    val allAppDirectories = directory.listFiles { file -> file.isDirectory && !file.isHidden }
+      .toSet()
+    val diffAppDirectories = allAppDirectories - appDirectories
+
+    if (diffAppDirectories.isNotEmpty()) {
+      diffAppDirectories.sortedBy { it }
+        .forEach {
+          logger.log("""⚠️ Could not find matching app in apps.json for $it""")
+        }
     }
   }
 
