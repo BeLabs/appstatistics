@@ -38,16 +38,20 @@ internal class ReviewFormatter(
 
     stringBuilder.append(">${review.content}\n")
 
-    stringBuilder.append(when (locale) {
-      Locale.GERMAN, Locale.GERMANY -> "von *${review.author}* am _${review.date()}_"
-      else -> "by *${review.author}* on _${review.date()}_"
-    })
+    stringBuilder.append(
+      when (locale) {
+        Locale.GERMAN, Locale.GERMANY -> "von *${review.author}* am _${review.date()}_"
+        else -> "by *${review.author}* on _${review.date()}_"
+      }
+    )
 
     if (review.version != null) {
-      stringBuilder.append(when (locale) {
-        Locale.GERMAN, Locale.GERMANY -> " mit Version _${review.version}_"
-        else -> " with version _${review.version}_"
-      })
+      stringBuilder.append(
+        when (locale) {
+          Locale.GERMAN, Locale.GERMANY -> " mit Version _${review.version}_"
+          else -> " with version _${review.version}_"
+        }
+      )
     }
 
     return stringBuilder.toString()

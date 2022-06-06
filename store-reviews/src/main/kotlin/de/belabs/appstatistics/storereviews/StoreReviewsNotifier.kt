@@ -11,7 +11,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.util.Locale
 
 internal class StoreReviewsNotifier(
   private val directory: File,
@@ -27,14 +26,14 @@ internal class StoreReviewsNotifier(
 
   fun missing(reviewIds: List<String>): List<String> {
     return reviewIds.filter { reviewId ->
-      (slackNotifierConfiguration != null && !directory.resolve(".$reviewId-slack").exists())
-        || (telegramBotNotifierConfiguration != null && !directory.resolve(".$reviewId-telegram").exists())
+      (slackNotifierConfiguration != null && !directory.resolve(".$reviewId-slack").exists()) ||
+        (telegramBotNotifierConfiguration != null && !directory.resolve(".$reviewId-telegram").exists())
     }
   }
 
   fun canNotify(review: Review): Boolean {
-    return (slackNotifierConfiguration != null && slackNotifierConfiguration.reviewFilter.matches(review))
-      || (telegramBotNotifierConfiguration != null && telegramBotNotifierConfiguration.reviewFilter.matches(review))
+    return (slackNotifierConfiguration != null && slackNotifierConfiguration.reviewFilter.matches(review)) ||
+      (telegramBotNotifierConfiguration != null && telegramBotNotifierConfiguration.reviewFilter.matches(review))
   }
 
   suspend fun notify(logger: Logger, app: App, storeName: String, reviews: List<Review>) {
@@ -51,11 +50,13 @@ internal class StoreReviewsNotifier(
 
       filteredReviews.forEach { review ->
         try {
-          notifier.notify(SlackNotifierPayload(
-            iconEmoji = notifier.configuration.emoji ?: ":${app.name.lowercase()}:",
-            username = notifier.configuration.username ?: "${app.name} ($storeName)",
-            text = reviewFormatter.asMarkdown(review)
-          ))
+          notifier.notify(
+            SlackNotifierPayload(
+              iconEmoji = notifier.configuration.emoji ?: ":${app.name.lowercase()}:",
+              username = notifier.configuration.username ?: "${app.name} ($storeName)",
+              text = reviewFormatter.asMarkdown(review)
+            )
+          )
 
           directory.resolve(".${review.id}-slack").writeText("")
         } catch (throwable: Throwable) {
@@ -74,10 +75,12 @@ internal class StoreReviewsNotifier(
 
       filteredReviews.forEach { review ->
         try {
-          notifier.notify(TelegramBotNotifierPayload(
-            chatId = notifier.configuration.chatId,
-            text = reviewFormatter.asText(storeName, review)
-          ))
+          notifier.notify(
+            TelegramBotNotifierPayload(
+              chatId = notifier.configuration.chatId,
+              text = reviewFormatter.asText(storeName, review)
+            )
+          )
 
           directory.resolve(".${review.id}-telegram").writeText("")
         } catch (throwable: Throwable) {
