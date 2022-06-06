@@ -35,21 +35,38 @@ import java.io.File
 
   override suspend fun create(
     app: App,
-    inappProducts: File
+    file: File,
   ): InAppProduct {
-    val inappProduct = JacksonFactory.getDefaultInstance()
-      .fromString(inappProducts.readText(), InAppProduct::class.java)
-
-    if (inappProduct.packageName != app.androidPackageName) {
-      throw UnsupportedOperationException("Package names differ. Expected \"${app.androidPackageName}\" Actual: \"${inappProduct.packageName}\"")
-    }
-
-    if (inappProducts.nameWithoutExtension != inappProduct.sku) {
-      throw UnsupportedOperationException("Sku's differ. Expected \"${inappProducts.nameWithoutExtension}\" Actual: \"${inappProduct.sku}\"")
-    }
+    val inAppProduct = inAppProduct(file, app)
 
     return androidPublisher.inappproducts()
-      .insert(inappProduct.packageName, inappProduct)
+      .insert(inAppProduct.packageName, inAppProduct)
       .execute()
+  }
+
+  override suspend fun edit(app: App, file: File): InAppProduct {
+    val inAppProduct = inAppProduct(file, app)
+
+    return androidPublisher.inappproducts()
+      .update(inAppProduct.packageName, inAppProduct.sku, inAppProduct)
+      .execute()
+  }
+
+  private fun inAppProduct(
+    file: File,
+    app: App,
+  ): InAppProduct {
+    val inappProduct = JacksonFactory.getDefaultInstance()
+      .fromString(file.readText(), InAppProduct::class.java)
+
+    if (inappProduct.packageName != app.androidPackageName) {
+      throw UnsupportedOperationException("Package names differ. Expected \"${app.androidPackageName}\" Actual: \"${inappProduct.packageName}\" in $file")
+    }
+
+    if (file.nameWithoutExtension != inappProduct.sku) {
+      throw UnsupportedOperationException("Sku's differ. Expected \"${file.nameWithoutExtension}\" Actual: \"${inappProduct.sku}\" in $file")
+    }
+
+    return inappProduct
   }
 }
