@@ -10,10 +10,6 @@ buildscript {
   }
 }
 
-plugins {
-  id("com.github.ben-manes.versions") version "0.39.0"
-}
-
 allprojects {
   repositories {
     google()
@@ -24,13 +20,12 @@ allprojects {
 subprojects {
   tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class.java).all {
     kotlinOptions.freeCompilerArgs += listOf(
-      "-Xuse-experimental=kotlin.Experimental",
-      "-Xopt-in=kotlin.RequiresOptIn"
+      "-opt-in=kotlin.RequiresOptIn"
     )
   }
 }
 
 tasks.named<Wrapper>("wrapper") {
-  gradleVersion = "7.1.1"
+  gradleVersion = "7.4.2"
   distributionType = Wrapper.DistributionType.ALL
 }
