@@ -65,6 +65,7 @@ internal class InAppProducts : CoreCommand() {
     }.toSet()
 
     val allAppDirectories = directory.listFiles { file -> file.isDirectory && !file.isHidden }
+      .orEmpty()
       .toSet()
     val diffAppDirectories = allAppDirectories - appDirectories
 
@@ -80,13 +81,13 @@ internal class InAppProducts : CoreCommand() {
     store: Store,
     app: App,
     appOutput: File,
-    inappProducts: List<File>,
+    inAppProducts: List<File>,
   ) {
-    if (inappProducts.isNotEmpty()) {
-      logger.log("""🚧 Found ${inappProducts.size} product(s) for ${store.name()} ${app.name}""")
+    if (inAppProducts.isNotEmpty()) {
+      logger.log("""🚧 Found ${inAppProducts.size} product(s) for ${store.name()} ${app.name}""")
       logger.increaseIndent()
 
-      inappProducts.forEach {
+      inAppProducts.forEach {
         val identifier = it.name
         try {
           logger.log("Trying to create $identifier")
@@ -134,41 +135,54 @@ internal class InAppProducts : CoreCommand() {
     appOutput: File,
     inAppProducts: List<InAppProduct>,
   ) {
+    val appPrefix = app.name.snakecase()
+
+    val localeInAppProducts = inAppProducts.flatMap { inAppProduct ->
+      val prefix = "${appPrefix}_${inAppProduct.sku}_"
+      inAppProduct.listings.flatMap { (locale, inAppProductListing) ->
+        listOf(
+          LocalisedInAppProduct(
+            locale = locale,
+            name = "${prefix}description",
+            value = inAppProductListing.description,
+          ),
+          LocalisedInAppProduct(
+            locale = locale,
+            name = "${prefix}title",
+            value = inAppProductListing.title,
+          ),
+        )
+      }
+    }.groupBy { it.locale }
+
+    writeInAppProductsFile(localeInAppProducts, appOutput, app)
+    writeAndroidResourcesStringsFile(localeInAppProducts, app)
+  }
+
+  private fun writeInAppProductsFile(
+    localeInAppProducts: Map<String, List<LocalisedInAppProduct>>,
+    appOutput: File,
+    app: App,
+  ) {
     val stringsDirectory = appOutput.resolve("strings/")
     stringsDirectory.delete()
 
-    inAppProducts.flatMap { inAppProduct ->
-      inAppProduct.listings.map { (locale, inAppProductListing) ->
-        LocalisedInAppProduct(
-          sku = inAppProduct.sku,
-          locale = locale,
-          title = inAppProductListing.title,
-          description = inAppProductListing.description,
-        )
-      }
-    }
-      .groupBy { it.locale }
+    localeInAppProducts
       .forEach { (locale, localisedInAppProducts) ->
         val directory = stringsDirectory.resolve(stringsDirectoryFrom(locale))
         directory.mkdirs()
 
-        val strings = localisedInAppProducts.sortedBy { it.sku }
-          .flatMap {
-            val prefix = app.name.snakecase()
-            listOf(
-              """<string name="${prefix}_${it.sku}_description">${it.description}</string>""",
-              """<string name="${prefix}_${it.sku}_title">${it.title}</string>""",
-            )
-          }
-          .joinToString(separator = "\n") { "  $it" }
+        val strings = localisedInAppProducts.sortedBy { it.name }
+          .map { it.toString() }
+          .joinToString(separator = "\n") { "${app.indentation}$it" }
 
         directory.resolve("inapp-products.xml").writeText(
           """
-          |<?xml version="1.0" encoding="utf-8"?>
-          |<resources>
-          |$strings
-          |</resources>
-          |
+            |<?xml version="1.0" encoding="utf-8"?>
+            |<resources>
+            |$strings
+            |</resources>
+            |
           """.trimMargin()
         )
       }
@@ -176,33 +190,50 @@ internal class InAppProducts : CoreCommand() {
     logger.log("""🎈️ Wrote all titles & descriptions of all in app products to $stringsDirectory""")
   }
 
-  private fun stringsDirectoryFrom(locale: String) = when (locale) {
-    "en-US" -> "values"
-    "ar" -> "values-ar"
-    "bg" -> "values-bg"
-    "de-DE" -> "values-de"
-    "el-GR" -> "values-el"
-    "es-ES" -> "values-es"
-    "fi-FI" -> "values-fi"
-    "fr-FR" -> "values-fr"
-    "hu-HU" -> "values-hu"
-    "id" -> "values-in"
-    "it-IT" -> "values-it"
-    "iw-IL" -> "values-iw"
-    "nl-NL" -> "values-nl"
-    "no-NO" -> "values-no"
-    "pt-BR" -> "values-pt"
-    "pt-PT" -> "values-pt-rBR"
-    "ro" -> "values-ro"
-    "ru-RU" -> "values-ru"
-    "sv-SE" -> "values-sv"
-    "tr-TR" -> "values-tr"
-    "uk" -> "values-uk"
-    "vi" -> "values-vi"
-    "zh-CN" -> "values-zh-rCN"
-    "zh-TW" -> "values-zh-rTW"
-    else -> error("Unsupported locale $locale which can't be mapped into a strings directory")
+  private fun writeAndroidResourcesStringsFile(
+    localeInAppProducts: Map<String, List<LocalisedInAppProduct>>,
+    app: App,
+  ) {
+    val androidResourceDirectory = app.androidResourceDirectory?.let(::File)
+
+    if (androidResourceDirectory != null) {
+      if (!androidResourceDirectory.exists()) {
+        logger.log("""❌️ Android resource directory does not exist: $androidResourceDirectory""")
+      } else {
+        val valuesDirectories = androidResourceDirectory.listFiles { file ->
+          file.isDirectory && file.name.startsWith("values") && !Regex("sw[\\d]+dp").containsMatchIn(file.name) && !file.name.startsWith("values-night")
+        }.orEmpty()
+
+        valuesDirectories.forEach { valuesDirectory ->
+          val stringsFile = valuesDirectory.resolve(app.androidResourceStringsFileName)
+
+          if (!stringsFile.exists()) {
+            logger.log("""❌️ Android's ${app.androidResourceStringsFileName} file does not exist: $stringsFile""")
+          } else {
+            val valuesDirectoryName = valuesDirectory.name
+            val locale = LOCALE_VALUES_MAP.firstNotNullOfOrNull { (locale, directoryName) -> locale.takeIf { directoryName == valuesDirectoryName } } ?: error("Unsupported values directory $valuesDirectoryName which can't be mapped into a locale")
+            val inAppProducts = localeInAppProducts[locale] ?: error("Inapp products are not translated for $locale")
+            val allInAppProducts = inAppProducts.toMutableList()
+
+            stringsFile.writeText(
+              stringsFile.readLines().dropLast(1).joinToString(separator = "\n") { line ->
+                val match = inAppProducts.firstOrNull { line.contains(it.name) }
+                when {
+                  match != null -> {
+                    allInAppProducts.remove(match)
+                    "${app.indentation}$match"
+                  }
+                  else -> line
+                }
+              } + "\n" + allInAppProducts.joinToString(separator = "") { "${app.indentation}$it\n" } + "</resources>\n"
+            )
+          }
+        }
+      }
+    }
   }
+
+  private fun stringsDirectoryFrom(locale: String) = LOCALE_VALUES_MAP[locale] ?: error("Unsupported locale $locale which can't be mapped into a strings directory")
 
   private fun writeFiles(
     appOutput: File,
@@ -230,11 +261,43 @@ internal class InAppProducts : CoreCommand() {
   }
 
   private data class LocalisedInAppProduct(
-    val sku: String,
     val locale: String,
-    val title: String,
-    val description: String,
-  )
+    val name: String,
+    val value: String,
+  ) {
+    override fun toString() = """<string name="$name">$value</string>"""
+  }
+
+  companion object {
+    val LOCALE_VALUES_MAP = mapOf(
+      "en-US" to "values",
+      "ar" to "values-ar",
+      "bg" to "values-bg",
+      "cs-CZ" to "values-cs",
+      "de-DE" to "values-de",
+      "el-GR" to "values-el",
+      "es-ES" to "values-es",
+      "fi-FI" to "values-fi",
+      "fr-FR" to "values-fr",
+      "hu-HU" to "values-hu",
+      "id" to "values-in",
+      "it-IT" to "values-it",
+      "iw-IL" to "values-iw",
+      "nl-NL" to "values-nl",
+      "no-NO" to "values-no",
+      "pl-PL" to "values-pl",
+      "pt-BR" to "values-pt",
+      "pt-PT" to "values-pt-rBR",
+      "ro" to "values-ro",
+      "ru-RU" to "values-ru",
+      "sv-SE" to "values-sv",
+      "tr-TR" to "values-tr",
+      "uk" to "values-uk",
+      "vi" to "values-vi",
+      "zh-CN" to "values-zh-rCN",
+      "zh-TW" to "values-zh-rTW",
+    )
+  }
 }
 
 // Not the best but does the job.
