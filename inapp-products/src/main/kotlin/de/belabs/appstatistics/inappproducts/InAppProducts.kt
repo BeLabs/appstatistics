@@ -180,25 +180,27 @@ internal class InAppProducts : CoreCommand() {
       inAppProduct.listings.flatMap { (locale, inAppProductListing) ->
         listOf(
           LocalisedInAppProduct(
+            sku = inAppProduct.sku,
             locale = locale,
             name = "${prefix}description",
             value = inAppProductListing.description,
           ),
           LocalisedInAppProduct(
+            sku = inAppProduct.sku,
             locale = locale,
             name = "${prefix}title",
             value = inAppProductListing.title,
           ),
         )
       }
-    }.groupBy { it.locale }
+    }
 
     writeInAppProductsFile(localeInAppProducts, appOutput, app)
     writeAndroidResourcesStringsFile(localeInAppProducts, app)
   }
 
   private fun writeInAppProductsFile(
-    localeInAppProducts: Map<String, List<LocalisedInAppProduct>>,
+    localeInAppProducts: List<LocalisedInAppProduct>,
     appOutput: File,
     app: App,
   ) {
@@ -206,6 +208,7 @@ internal class InAppProducts : CoreCommand() {
     stringsDirectory.delete()
 
     localeInAppProducts
+      .groupBy { it.locale }
       .forEach { (locale, localisedInAppProducts) ->
         val directory = stringsDirectory.resolve(stringsDirectoryFrom(locale))
         directory.mkdirs()
@@ -229,7 +232,7 @@ internal class InAppProducts : CoreCommand() {
   }
 
   private fun writeAndroidResourcesStringsFile(
-    localeInAppProducts: Map<String, List<LocalisedInAppProduct>>,
+    localeInAppProducts: List<LocalisedInAppProduct>,
     app: App,
   ) {
     val androidResourceDirectory = app.androidResourceDirectory?.let(::File)
@@ -242,15 +245,17 @@ internal class InAppProducts : CoreCommand() {
           file.isDirectory && file.name.startsWith("values") && !Regex("sw[\\d]+dp").containsMatchIn(file.name) && !file.name.startsWith("values-night")
         }.orEmpty()
 
-        valuesDirectories.forEach { valuesDirectory ->
+        val localeInAppProductsLocaleMap = localeInAppProducts.groupBy { it.locale }
+        val allLocales = valuesDirectories.mapNotNull { valuesDirectory ->
           val stringsFile = valuesDirectory.resolve(app.androidResourceStringsFileName)
 
           if (!stringsFile.exists()) {
             logger.log("""❌️ Android's ${app.androidResourceStringsFileName} file does not exist: $stringsFile""")
+            null
           } else {
             val valuesDirectoryName = valuesDirectory.name
             val locale = LOCALE_VALUES_MAP.firstNotNullOfOrNull { (locale, directoryName) -> locale.takeIf { directoryName == valuesDirectoryName } } ?: error("Unsupported values directory $valuesDirectoryName which can't be mapped into a locale")
-            val inAppProducts = localeInAppProducts[locale] ?: error("Inapp products are not translated for $locale")
+            val inAppProducts = localeInAppProductsLocaleMap[locale] ?: error("Inapp products are not translated for $locale")
             val allInAppProducts = inAppProducts.toMutableList()
 
             stringsFile.writeText(
@@ -265,8 +270,19 @@ internal class InAppProducts : CoreCommand() {
                 }
               } + "\n" + allInAppProducts.joinToString(separator = "") { "${app.indentation}$it\n" } + "</resources>\n"
             )
+
+            locale
           }
         }
+
+        localeInAppProducts.groupBy { it.sku }
+          .forEach { (sku, inAppProducts) ->
+            val diff = allLocales - inAppProducts.map { it.locale }.toSet()
+
+            if (diff.isNotEmpty()) {
+              logger.log("""⚠️ Missing translations for $sku: ${diff.joinToString(separator = ", ")}""")
+            }
+          }
       }
     }
   }
@@ -277,7 +293,7 @@ internal class InAppProducts : CoreCommand() {
     appOutput: File,
     inAppProducts: List<InAppProduct>,
   ) {
-    val deletedFiles = appOutput.listFiles { file -> file.extension == "json" }.toSet()
+    val deletedFiles = appOutput.listFiles { file -> file.extension == "json" }.orEmpty().toSet()
     deletedFiles.forEach { it.delete() }
 
     val createdFiles = inAppProducts.map { inAppProduct -> appOutput.write(inAppProduct) }.toSet()
@@ -299,6 +315,7 @@ internal class InAppProducts : CoreCommand() {
   }
 
   private data class LocalisedInAppProduct(
+    val sku: String,
     val locale: String,
     val name: String,
     val value: String,
