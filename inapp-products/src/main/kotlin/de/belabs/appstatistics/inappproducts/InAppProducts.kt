@@ -176,7 +176,7 @@ internal class InAppProducts : CoreCommand() {
     val appPrefix = app.name.snakecase()
 
     val localeInAppProducts = inAppProducts.flatMap { inAppProduct ->
-      val prefix = "${appPrefix}_${inAppProduct.sku}_"
+      val prefix = "${appPrefix}_inapp_${inAppProduct.sku}_"
       inAppProduct.listings.flatMap { (locale, inAppProductListing) ->
         listOf(
           LocalisedInAppProduct(
