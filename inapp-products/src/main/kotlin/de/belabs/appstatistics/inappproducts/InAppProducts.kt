@@ -195,15 +195,19 @@ internal class InAppProducts : CoreCommand() {
       }
     }
 
-    writeInAppProductsFile(localeInAppProducts, appOutput, app)
-    writeAndroidResourcesStringsFile(localeInAppProducts, app)
+    val destinations = listOfNotNull(
+      writeInAppProductsFile(localeInAppProducts, appOutput, app),
+      writeAndroidResourcesStringsFile(localeInAppProducts, app),
+    )
+
+    logger.log("""🎈️ Wrote all titles & descriptions of all in app products to ${destinations.joinToString(separator = " & ")}""")
   }
 
   private fun writeInAppProductsFile(
     localeInAppProducts: List<LocalisedInAppProduct>,
     appOutput: File,
     app: App,
-  ) {
+  ): File {
     val stringsDirectory = appOutput.resolve("strings/")
     stringsDirectory.delete()
 
@@ -228,13 +232,13 @@ internal class InAppProducts : CoreCommand() {
         )
       }
 
-    logger.log("""🎈️ Wrote all titles & descriptions of all in app products to $stringsDirectory""")
+    return stringsDirectory
   }
 
   private fun writeAndroidResourcesStringsFile(
     localeInAppProducts: List<LocalisedInAppProduct>,
     app: App,
-  ) {
+  ): File? {
     val androidResourceDirectory = app.androidResourceDirectory?.let(::File)
 
     if (androidResourceDirectory != null) {
@@ -283,8 +287,12 @@ internal class InAppProducts : CoreCommand() {
               logger.log("""⚠️ Missing translations for $sku: ${diff.joinToString(separator = ", ")}""")
             }
           }
+
+        return androidResourceDirectory
       }
     }
+
+    return null
   }
 
   private fun stringsDirectoryFrom(locale: String) = LOCALE_VALUES_MAP[locale] ?: error("Unsupported locale $locale which can't be mapped into a strings directory")
