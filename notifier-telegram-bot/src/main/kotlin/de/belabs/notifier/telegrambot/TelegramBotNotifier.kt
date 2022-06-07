@@ -5,6 +5,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import kotlinx.serialization.SerialName
@@ -24,9 +25,9 @@ class TelegramBotNotifier<Configuration : TelegramBotNotifierConfiguration>(
     """✈️ """
 
   override suspend fun notify(payload: TelegramBotNotifierPayload) {
-    httpClient.post<Unit>("https://api.telegram.org/bot${configuration.botToken}/sendMessage") {
+    httpClient.post("https://api.telegram.org/bot${configuration.botToken}/sendMessage") {
       header(HttpHeaders.ContentType, ContentType.Application.Json)
-      body = json.encodeToString(TelegramBotNotifierPayload.serializer(), payload)
+      setBody(json.encodeToString(TelegramBotNotifierPayload.serializer(), payload))
     }
   }
 }

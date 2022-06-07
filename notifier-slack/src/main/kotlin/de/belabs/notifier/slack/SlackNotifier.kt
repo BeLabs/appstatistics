@@ -5,6 +5,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import kotlinx.serialization.SerialName
@@ -24,9 +25,9 @@ class SlackNotifier<Configuration : SlackNotifierConfiguration>(
     """📱"""
 
   override suspend fun notify(payload: SlackNotifierPayload) {
-    httpClient.post<Unit>(configuration.hook) {
+    httpClient.post(configuration.hook) {
       header(HttpHeaders.ContentType, ContentType.Application.Json)
-      body = json.encodeToString(SlackNotifierPayload.serializer(), payload)
+      setBody(json.encodeToString(SlackNotifierPayload.serializer(), payload))
     }
   }
 }
