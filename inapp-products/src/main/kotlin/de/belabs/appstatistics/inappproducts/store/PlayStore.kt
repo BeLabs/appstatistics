@@ -4,7 +4,7 @@ package de.belabs.appstatistics.inappproducts.store
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
-import com.google.api.client.json.jackson2.JacksonFactory
+import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.androidpublisher.AndroidPublisher
 import com.google.api.services.androidpublisher.AndroidPublisherScopes
 import com.google.api.services.androidpublisher.model.InAppProduct
@@ -17,7 +17,7 @@ import java.io.File
   private val credentials = GoogleCredential.fromStream(credentialsFile.inputStream())
     .createScoped(listOf(AndroidPublisherScopes.ANDROIDPUBLISHER))
 
-  private val androidPublisher = AndroidPublisher.Builder(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), credentials)
+  private val androidPublisher = AndroidPublisher.Builder(GoogleNetHttpTransport.newTrustedTransport(), GsonFactory.getDefaultInstance(), credentials)
     .setApplicationName("inapp-products")
     .build()
 
@@ -56,7 +56,7 @@ import java.io.File
     file: File,
     app: App,
   ): InAppProduct {
-    val inappProduct = JacksonFactory.getDefaultInstance()
+    val inappProduct = GsonFactory.getDefaultInstance()
       .fromString(file.readText(), InAppProduct::class.java)
 
     if (inappProduct.packageName != app.androidPackageName) {

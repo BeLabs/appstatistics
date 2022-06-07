@@ -26,7 +26,7 @@ dependencies {
 
   api("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.kotlinSerialization}")
 
-  api("com.google.apis:google-api-services-androidpublisher:v3-rev20201022-1.30.10")
+  api("com.google.apis:google-api-services-androidpublisher:v3-rev20220511-1.32.1")
 }
 
 dependencies {
