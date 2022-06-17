@@ -13,7 +13,7 @@ import java.io.File
 import java.time.Instant
 
 @Suppress("BlockingMethodInNonBlockingContext") internal class PlayStore(
-  private val credentialsFile: File
+  private val credentialsFile: File,
 ) : Store {
   private val credentials = GoogleCredential.fromStream(credentialsFile.inputStream())
     .createScoped(listOf(AndroidPublisherScopes.ANDROIDPUBLISHER))

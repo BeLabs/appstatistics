@@ -8,7 +8,7 @@ import java.util.Locale
 
 internal class ReviewFormatter(
   private val locale: Locale,
-  private val zoneId: ZoneId
+  private val zoneId: ZoneId,
 ) {
   fun asText(storeName: String, review: Review): String {
     val stringBuilder = StringBuilder()
@@ -42,7 +42,7 @@ internal class ReviewFormatter(
       when (locale) {
         Locale.GERMAN, Locale.GERMANY -> "von *${review.author}* am _${review.date()}_"
         else -> "by *${review.author}* on _${review.date()}_"
-      }
+      },
     )
 
     if (review.version != null) {
@@ -50,7 +50,7 @@ internal class ReviewFormatter(
         when (locale) {
           Locale.GERMAN, Locale.GERMANY -> " mit Version _${review.version}_"
           else -> " with version _${review.version}_"
-        }
+        },
       )
     }
 

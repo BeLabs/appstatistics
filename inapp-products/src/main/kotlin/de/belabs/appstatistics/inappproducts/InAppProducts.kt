@@ -11,7 +11,7 @@ import java.io.File
 internal class InAppProducts : CoreCommand() {
   override suspend fun runOn(
     organization: String,
-    root: File
+    root: File,
   ) {
     val directory = root.resolve("inapp-products/")
     directory.mkdirs()
@@ -228,7 +228,7 @@ internal class InAppProducts : CoreCommand() {
             |$strings
             |</resources>
             |
-          """.trimMargin()
+          """.trimMargin(),
         )
       }
 
@@ -272,7 +272,7 @@ internal class InAppProducts : CoreCommand() {
                   }
                   else -> line
                 }
-              } + "\n" + allInAppProducts.joinToString(separator = "") { "${app.indentation}$it\n" } + "</resources>\n"
+              } + "\n" + allInAppProducts.joinToString(separator = "") { "${app.indentation}$it\n" } + "</resources>\n",
             )
 
             locale

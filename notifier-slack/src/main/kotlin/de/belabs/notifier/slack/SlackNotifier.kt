@@ -13,7 +13,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 class SlackNotifier<Configuration : SlackNotifierConfiguration>(
-  override val configuration: Configuration
+  override val configuration: Configuration,
 ) : Notifier<Configuration, SlackNotifierPayload> {
   private val json = Json
   private val httpClient = HttpClient(OkHttp.create())
@@ -35,7 +35,7 @@ class SlackNotifier<Configuration : SlackNotifierConfiguration>(
 @Serializable data class SlackNotifierPayload(
   @SerialName("icon_emoji") val iconEmoji: String,
   @SerialName("username") val username: String,
-  @SerialName("text") val text: String
+  @SerialName("text") val text: String,
 )
 
 interface SlackNotifierConfiguration {

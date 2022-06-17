@@ -51,7 +51,7 @@ internal class AppleStore : Store {
                     updated = OffsetDateTime.parse(it.string("updated")).toInstant(),
                     rating = it.string("im:rating").toInt(),
                     version = it.string("im:version"),
-                    author = (it.getElementsByTagName("author").item(0) as Element).string("name")
+                    author = (it.getElementsByTagName("author").item(0) as Element).string("name"),
                   )
                 }
             } else {

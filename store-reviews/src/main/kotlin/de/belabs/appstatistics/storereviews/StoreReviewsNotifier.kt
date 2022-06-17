@@ -16,7 +16,7 @@ internal class StoreReviewsNotifier(
   private val directory: File,
   private val reviewFormatter: ReviewFormatter,
   private val slackNotifierConfiguration: JsonSlackNotifierConfiguration?,
-  private val telegramBotNotifierConfiguration: JsonTelegramBotNotifierConfiguration?
+  private val telegramBotNotifierConfiguration: JsonTelegramBotNotifierConfiguration?,
 ) {
   init {
     directory.mkdirs()
@@ -54,8 +54,8 @@ internal class StoreReviewsNotifier(
             SlackNotifierPayload(
               iconEmoji = notifier.configuration.emoji ?: ":${app.name.lowercase()}:",
               username = notifier.configuration.username ?: "${app.name} ($storeName)",
-              text = reviewFormatter.asMarkdown(review)
-            )
+              text = reviewFormatter.asMarkdown(review),
+            ),
           )
 
           directory.resolve(".${review.id}-slack").writeText("")
@@ -78,8 +78,8 @@ internal class StoreReviewsNotifier(
           notifier.notify(
             TelegramBotNotifierPayload(
               chatId = notifier.configuration.chatId,
-              text = reviewFormatter.asText(storeName, review)
-            )
+              text = reviewFormatter.asText(storeName, review),
+            ),
           )
 
           directory.resolve(".${review.id}-telegram").writeText("")
@@ -98,11 +98,11 @@ internal interface StoreReviewsNotifierConfiguration {
 }
 
 @Serializable internal data class NotifierReviewFilter(
-  @SerialName("languages") val languages: List<String>? = null
+  @SerialName("languages") val languages: List<String>? = null,
 ) {
   companion object {
     val EXAMPLE = NotifierReviewFilter(
-      languages = listOf("de", "en")
+      languages = listOf("de", "en"),
     )
   }
 }
@@ -111,7 +111,7 @@ internal interface StoreReviewsNotifierConfiguration {
   @SerialName("emoji") val emoji: String? = null,
   @SerialName("username") val username: String? = null,
   @SerialName("hook") override val hook: String,
-  @SerialName("review_filter") override val reviewFilter: NotifierReviewFilter? = null
+  @SerialName("review_filter") override val reviewFilter: NotifierReviewFilter? = null,
 ) : SlackNotifierConfiguration, StoreReviewsNotifierConfiguration {
   override fun asString(json: Json) = json.encodeToString(serializer(), this)
 
@@ -120,7 +120,7 @@ internal interface StoreReviewsNotifierConfiguration {
       emoji = ":star:",
       username = "Review",
       hook = "https://hooks.slack.com/services/ASDFDSR32/TW863FSGDGA/Ad344SDAHTYOJTGE2354DGSF",
-      reviewFilter = NotifierReviewFilter.EXAMPLE
+      reviewFilter = NotifierReviewFilter.EXAMPLE,
     )
   }
 }
@@ -128,7 +128,7 @@ internal interface StoreReviewsNotifierConfiguration {
 @Serializable internal data class JsonTelegramBotNotifierConfiguration(
   @SerialName("bot_token") override val botToken: String,
   @SerialName("chat_id") val chatId: Long,
-  @SerialName("review_filter") override val reviewFilter: NotifierReviewFilter? = null
+  @SerialName("review_filter") override val reviewFilter: NotifierReviewFilter? = null,
 ) : TelegramBotNotifierConfiguration, StoreReviewsNotifierConfiguration {
   override fun asString(json: Json) = json.encodeToString(serializer(), this)
 
@@ -136,7 +136,7 @@ internal interface StoreReviewsNotifierConfiguration {
     val EXAMPLE = JsonTelegramBotNotifierConfiguration(
       chatId = 3431432432,
       botToken = "7205431853:up1jf5adDSF5qewfaUi8r564rgDFsfasdaA",
-      reviewFilter = NotifierReviewFilter.EXAMPLE
+      reviewFilter = NotifierReviewFilter.EXAMPLE,
     )
   }
 }

@@ -17,7 +17,7 @@ class ReviewFormatterTest {
 
         Really nice app. 1 stars
       """.trimIndent(),
-      actual = reviewFormatter.asText("Android", review1Star.copy(version = null))
+      actual = reviewFormatter.asText("Android", review1Star.copy(version = null)),
     )
   }
 
@@ -32,7 +32,7 @@ class ReviewFormatterTest {
 
         Really nice app. 5 stars
       """.trimIndent(),
-      actual = reviewFormatter.asText("iOS", review5Stars)
+      actual = reviewFormatter.asText("iOS", review5Stars),
     )
   }
 
@@ -45,7 +45,7 @@ class ReviewFormatterTest {
         >Really nice app. 1 stars
         von *Me* am _23.09.2020 08:54:39_
       """.trimIndent(),
-      actual = reviewFormatter.asMarkdown(review1Star.copy(version = null))
+      actual = reviewFormatter.asMarkdown(review1Star.copy(version = null)),
     )
   }
 
@@ -59,7 +59,7 @@ class ReviewFormatterTest {
         >Really nice app. 5 stars
         by *Me* on _Sep 23, 2020 8:54:39 AM_ with version _1.0.0_
       """.trimIndent(),
-      actual = reviewFormatter.asMarkdown(review5Stars)
+      actual = reviewFormatter.asMarkdown(review5Stars),
     )
   }
 }
