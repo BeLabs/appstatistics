@@ -79,7 +79,7 @@ internal class StoreReviews : CoreCommand() {
 
       val supportedNotifiers = mapOf(
         slackConfigurationFile to SlackNotifier(JsonSlackNotifierConfiguration.EXAMPLE),
-        telegramBotConfigurationFile to TelegramBotNotifier(JsonTelegramBotNotifierConfiguration.EXAMPLE)
+        telegramBotConfigurationFile to TelegramBotNotifier(JsonTelegramBotNotifierConfiguration.EXAMPLE),
       )
 
       supportedNotifiers.forEach { (file, notifier) ->
@@ -116,7 +116,7 @@ internal class StoreReviews : CoreCommand() {
           appOutput.listFiles()
             .orEmpty()
             .filter { it.name.endsWith(".json") }
-            .map { it.nameWithoutExtension }
+            .map { it.nameWithoutExtension },
         )
           .map { jsonPretty.decodeFromString(Review.serializer(), appOutput.resolve("$it.json").readText()) }
           .filter { notifiers.canNotify(it) && it.updated >= Instant.now().minus(10, ChronoUnit.DAYS) }

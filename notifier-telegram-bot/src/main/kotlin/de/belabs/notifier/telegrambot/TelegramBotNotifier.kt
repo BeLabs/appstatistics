@@ -13,7 +13,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 class TelegramBotNotifier<Configuration : TelegramBotNotifierConfiguration>(
-  override val configuration: Configuration
+  override val configuration: Configuration,
 ) : Notifier<Configuration, TelegramBotNotifierPayload> {
   private val json = Json
   private val httpClient = HttpClient(OkHttp.create())
@@ -34,7 +34,7 @@ class TelegramBotNotifier<Configuration : TelegramBotNotifierConfiguration>(
 
 @Serializable data class TelegramBotNotifierPayload(
   @SerialName("chat_id") val chatId: Long,
-  @SerialName("text") val text: String
+  @SerialName("text") val text: String,
 )
 
 interface TelegramBotNotifierConfiguration {

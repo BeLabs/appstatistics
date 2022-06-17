@@ -8,13 +8,13 @@ import kotlinx.serialization.Serializable
   @SerialName("android_package_name") val androidPackageName: String? = null,
   @SerialName("apple_id") val appleId: String? = null,
   @SerialName("apple_number_of_pages_to_check") val appleNumberOfPagesToCheck: Int = 5,
-  @SerialName("apple_languages_to_check") val appleLanguagesToCheck: List<String> = listOf("US", "DE")
+  @SerialName("apple_languages_to_check") val appleLanguagesToCheck: List<String> = listOf("US", "DE"),
 ) {
   internal companion object {
     val EXAMPLE = App(
       name = "BeCoach",
       androidPackageName = "app.becoach.android.coachee",
-      appleId = "1489873599"
+      appleId = "1489873599",
     )
   }
 }
