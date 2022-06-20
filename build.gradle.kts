@@ -22,7 +22,7 @@ rootProject.configure<com.vanniktech.code.quality.tools.CodeQualityToolsPluginEx
     enabled = false // Kotlin only.
   }
   ktlint {
-    toolVersion = "0.45.2"
+    toolVersion = "0.46.0"
     experimental = true
   }
   detekt {
