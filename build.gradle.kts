@@ -5,13 +5,14 @@ buildscript {
     gradlePluginPortal()
   }
   dependencies {
-    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${Versions.kotlinVersion}")
-    classpath("org.jetbrains.kotlin:kotlin-serialization:${Versions.kotlinVersion}")
+    classpath(libs.plugin.kotlin)
+    classpath(libs.plugin.kotlin.serialization)
+    classpath(libs.plugin.shadowjar)
   }
 }
 
 plugins {
-  id("com.vanniktech.code.quality.tools") version "0.21.0"
+  alias(libs.plugins.codequalitytools)
 }
 
 rootProject.configure<com.vanniktech.code.quality.tools.CodeQualityToolsPluginExtension> {
@@ -22,7 +23,7 @@ rootProject.configure<com.vanniktech.code.quality.tools.CodeQualityToolsPluginEx
     enabled = false // Kotlin only.
   }
   ktlint {
-    toolVersion = "0.46.0"
+    toolVersion = libs.versions.ktlint.get()
     experimental = true
   }
   detekt {
@@ -57,6 +58,6 @@ subprojects {
 }
 
 tasks.named<Wrapper>("wrapper") {
-  gradleVersion = "7.4.2"
+  gradleVersion = libs.versions.gradle.get()
   distributionType = Wrapper.DistributionType.ALL
 }

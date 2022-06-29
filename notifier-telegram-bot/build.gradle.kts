@@ -8,11 +8,5 @@ dependencies {
 }
 
 dependencies {
-  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.kotlinSerialization}")
-  implementation("io.ktor:ktor-client-core-jvm:${Versions.ktor}")
-  implementation("io.ktor:ktor-client-okhttp:${Versions.ktor}")
-}
-
-dependencies {
-  testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
+  testImplementation(libs.kotlin.test.junit)
 }

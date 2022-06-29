@@ -2,7 +2,7 @@ plugins {
   kotlin("jvm")
   kotlin("plugin.serialization")
   application
-  id("com.github.johnrengelman.shadow") version Versions.shadowJar
+  id("com.github.johnrengelman.shadow")
 }
 
 application {
@@ -23,5 +23,5 @@ dependencies {
 }
 
 dependencies {
-  testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
+  testImplementation(libs.kotlin.test.junit)
 }

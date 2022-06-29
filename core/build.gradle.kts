@@ -2,7 +2,6 @@ plugins {
   kotlin("jvm")
   kotlin("plugin.serialization")
   application
-  id("com.github.johnrengelman.shadow") version Versions.shadowJar
 }
 
 application {
@@ -19,16 +18,13 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 }
 
 dependencies {
-  api("com.github.ajalt:clikt:${Versions.clikt}")
-
-  api("io.ktor:ktor-client-core-jvm:${Versions.ktor}")
-  api("io.ktor:ktor-client-okhttp:${Versions.ktor}")
-
-  api("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.kotlinSerialization}")
-
-  api("com.google.apis:google-api-services-androidpublisher:v3-rev20220609-1.32.1")
+  api(libs.androidpublisher)
+  api(libs.clikt)
+  api(libs.kotlinx.serialization.json)
+  api(libs.ktor.client.core.jvm)
+  api(libs.ktor.client.okhttp)
 }
 
 dependencies {
-  testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
+  testImplementation(libs.kotlin.test.junit)
 }
