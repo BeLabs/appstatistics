@@ -1,7 +1,7 @@
 [versions]
 ktlint = "0.46.0"
 gradle = "7.4.2"
-ktor = "2.0.2"
+ktor = "2.0.3"
 kotlin = "1.7.0"
 
 [libraries]
