@@ -2,7 +2,7 @@
 ktlint = "0.46.0"
 gradle = "7.4.2"
 ktor = "2.0.3"
-kotlin = "1.7.0"
+kotlin = "1.7.10"
 
 [libraries]
 androidpublisher = { module = "com.google.apis:google-api-services-androidpublisher", version = "v3-rev20220609-1.32.1" }
