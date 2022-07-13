@@ -52,21 +52,31 @@ import java.io.File
       .execute()
   }
 
+  override suspend fun edit(app: App, inAppProduct: InAppProduct): InAppProduct {
+    require(inAppProduct.packageName == app.androidPackageName) {
+      "Package names differ. Expected \"${app.androidPackageName}\" Actual: \"${inAppProduct.packageName}\""
+    }
+
+    return androidPublisher.inappproducts()
+      .update(inAppProduct.packageName, inAppProduct.sku, inAppProduct)
+      .execute()
+  }
+
   private fun inAppProduct(
     file: File,
     app: App,
   ): InAppProduct {
-    val inappProduct = GsonFactory.getDefaultInstance()
+    val inAppProduct = GsonFactory.getDefaultInstance()
       .fromString(file.readText(), InAppProduct::class.java)
 
-    if (inappProduct.packageName != app.androidPackageName) {
-      throw UnsupportedOperationException("Package names differ. Expected \"${app.androidPackageName}\" Actual: \"${inappProduct.packageName}\" in $file")
+    require(inAppProduct.packageName == app.androidPackageName) {
+      "Package names differ. Expected \"${app.androidPackageName}\" Actual: \"${inAppProduct.packageName}\" in $file"
     }
 
-    if (file.nameWithoutExtension != inappProduct.sku) {
-      throw UnsupportedOperationException("Sku's differ. Expected \"${file.nameWithoutExtension}\" Actual: \"${inappProduct.sku}\" in $file")
+    require(file.nameWithoutExtension == inAppProduct.sku) {
+      "Sku's differ. Expected \"${file.nameWithoutExtension}\" Actual: \"${inAppProduct.sku}\" in $file"
     }
 
-    return inappProduct
+    return inAppProduct
   }
 }

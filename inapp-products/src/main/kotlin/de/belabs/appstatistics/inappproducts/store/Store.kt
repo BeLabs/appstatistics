@@ -10,4 +10,5 @@ internal interface Store {
   suspend fun inAppProducts(app: App): List<InAppProduct>
   suspend fun create(app: App, file: File): InAppProduct
   suspend fun edit(app: App, file: File): InAppProduct
+  suspend fun edit(app: App, inAppProduct: InAppProduct): InAppProduct
 }
