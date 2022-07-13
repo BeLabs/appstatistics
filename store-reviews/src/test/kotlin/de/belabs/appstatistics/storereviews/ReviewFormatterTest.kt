@@ -13,7 +13,7 @@ class ReviewFormatterTest {
 
     assertEquals(
       expected = """
-        ★☆☆☆☆ - Me - Android - 23.09.2020 08:54:39
+        ★☆☆☆☆ - Me - Android - 23.09.2020, 08:54:39
 
         Really nice app. 1 stars
       """.trimIndent(),
@@ -26,7 +26,7 @@ class ReviewFormatterTest {
 
     assertEquals(
       expected = """
-        ★★★★★ - Me - iOS v1.0.0 - Sep 23, 2020 8:54:39 AM
+        ★★★★★ - Me - iOS v1.0.0 - Sep 23, 2020, 8:54:39 AM
 
         5 Stars title
 
@@ -43,7 +43,7 @@ class ReviewFormatterTest {
       expected = """
         ★☆☆☆☆
         >Really nice app. 1 stars
-        von *Me* am _23.09.2020 08:54:39_
+        von *Me* am _23.09.2020, 08:54:39_
       """.trimIndent(),
       actual = reviewFormatter.asMarkdown(review1Star.copy(version = null)),
     )
@@ -57,7 +57,7 @@ class ReviewFormatterTest {
         ★★★★★
         >*5 Stars title*
         >Really nice app. 5 stars
-        by *Me* on _Sep 23, 2020 8:54:39 AM_ with version _1.0.0_
+        by *Me* on _Sep 23, 2020, 8:54:39 AM_ with version _1.0.0_
       """.trimIndent(),
       actual = reviewFormatter.asMarkdown(review5Stars),
     )
