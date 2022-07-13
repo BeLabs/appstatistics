@@ -1,6 +1,7 @@
 package de.belabs.appstatistics.inappproducts
 
 import com.google.api.services.androidpublisher.model.InAppProduct
+import com.google.api.services.androidpublisher.model.InAppProductListing
 import de.belabs.appstatistics.CoreCommand
 import de.belabs.appstatistics.inappproducts.store.PlayStore
 import de.belabs.appstatistics.inappproducts.store.Store
@@ -67,7 +68,8 @@ internal class InAppProducts : CoreCommand() {
             .toList(),
         )
 
-        query(store, app, appOutput)
+        val inAppProducts = query(store, app, appOutput)
+        updateMissingListingsFromApp(store, app, appOutput, inAppProducts)
       }
 
       appDirectory
@@ -148,7 +150,7 @@ internal class InAppProducts : CoreCommand() {
     store: Store,
     app: App,
     appOutput: File,
-  ) {
+  ): List<InAppProduct> {
     logger.log("""🔍 Querying ${store.name()} ${app.name} products""")
     logger.increaseIndent()
 
@@ -166,29 +168,93 @@ internal class InAppProducts : CoreCommand() {
 
     logger.log()
     logger.decreaseIndent()
+    return inAppProducts
   }
+
+  /**
+   * Looks at the strings xml files from the [app] and checks if any of the [inAppProducts]
+   * have missing translations.
+   * In this case, they have been added, and we want to update the listings also on the Play Console.
+   */
+  @Suppress("RedundantSuspendModifier", "UNUSED_PARAMETER")
+  private suspend fun updateMissingListingsFromApp(
+    store: Store,
+    app: App,
+    appOutput: File,
+    inAppProducts: List<InAppProduct>,
+  ) {
+    val androidResourceDirectory = app.androidResourceDirectory?.let(::File)
+
+    if (androidResourceDirectory != null && androidResourceDirectory.exists()) {
+      val valuesDirectories = androidResourceDirectory.valuesDirectories()
+
+      val modifiedInAppProducts = inAppProducts.mapNotNull { inAppProduct ->
+        val hasChanged = valuesDirectories.map { valuesDirectory ->
+          val locale = localeFromDirectoryName(valuesDirectory.name)
+          val stringsFile = valuesDirectory.resolve(app.androidResourceStringsFileName)
+          val stringsContent = stringsFile.readLines()
+          val linePrefixDescription = "${app.indentation}<string name=\"${resourceDescription(app, inAppProduct)}"
+          val linePrefixTitle = "${app.indentation}<string name=\"${resourceTitle(app, inAppProduct)}"
+          val description = stringsContent.firstOrNull { it.startsWith(linePrefixDescription) }?.removePrefix(linePrefixDescription)?.removePrefix("\">")?.removeSuffix("</string>")?.xmlUnescaped()
+          val title = stringsContent.firstOrNull { it.startsWith(linePrefixTitle) }?.removePrefix(linePrefixTitle)?.removePrefix("\">")?.removeSuffix("</string>")?.xmlUnescaped()
+          val current = inAppProduct.listings[locale]
+          val willChange = current?.title != title || current?.description != description
+          val match = current ?: InAppProductListing()
+          match.title = title
+          match.description = description
+          inAppProduct.listings = inAppProduct.listings + (locale to match)
+          willChange
+        }.any { it }
+
+        inAppProduct.takeIf { hasChanged }
+      }
+
+      if (modifiedInAppProducts.isNotEmpty()) {
+        logger.log("""🕵️‍️ Detected ${modifiedInAppProducts.size} changed in app products from your Android code""")
+
+        val modifiedInAppProductsSkus = modifiedInAppProducts.map { it.sku }.toSet()
+        val others = inAppProducts.filterNot { modifiedInAppProductsSkus.contains(it.sku) }
+
+        writeStringsFile(
+          app = app,
+          appOutput = appOutput,
+          inAppProducts = others + modifiedInAppProducts.map {
+            val inAppProduct = store.edit(app, it)
+            appOutput.write(inAppProduct)
+            inAppProduct
+          },
+        )
+      }
+    }
+  }
+
+  private fun resourcePrefix(app: App, inAppProduct: InAppProduct) =
+    "${app.name.snakecase()}_inapp_${inAppProduct.sku}_"
+
+  private fun resourceTitle(app: App, inAppProduct: InAppProduct) =
+    "${resourcePrefix(app, inAppProduct)}title"
+
+  private fun resourceDescription(app: App, inAppProduct: InAppProduct) =
+    "${resourcePrefix(app, inAppProduct)}description"
 
   private fun writeStringsFile(
     app: App,
     appOutput: File,
     inAppProducts: List<InAppProduct>,
   ) {
-    val appPrefix = app.name.snakecase()
-
     val localeInAppProducts = inAppProducts.flatMap { inAppProduct ->
-      val prefix = "${appPrefix}_inapp_${inAppProduct.sku}_"
       inAppProduct.listings.flatMap { (locale, inAppProductListing) ->
         listOf(
           LocalisedInAppProduct(
             sku = inAppProduct.sku,
             locale = locale,
-            name = "${prefix}description",
+            name = resourceDescription(app, inAppProduct),
             value = inAppProductListing.description,
           ),
           LocalisedInAppProduct(
             sku = inAppProduct.sku,
             locale = locale,
-            name = "${prefix}title",
+            name = resourceTitle(app, inAppProduct),
             value = inAppProductListing.title,
           ),
         )
@@ -235,6 +301,10 @@ internal class InAppProducts : CoreCommand() {
     return stringsDirectory
   }
 
+  private fun File.valuesDirectories() = listFiles { file ->
+    file.isDirectory && file.name.startsWith("values") && !Regex("sw[\\d]+dp").containsMatchIn(file.name) && !file.name.startsWith("values-night")
+  }.orEmpty()
+
   private fun writeAndroidResourcesStringsFile(
     localeInAppProducts: List<LocalisedInAppProduct>,
     app: App,
@@ -245,10 +315,7 @@ internal class InAppProducts : CoreCommand() {
       if (!androidResourceDirectory.exists()) {
         logger.log("""❌️ Android resource directory does not exist: $androidResourceDirectory""")
       } else {
-        val valuesDirectories = androidResourceDirectory.listFiles { file ->
-          file.isDirectory && file.name.startsWith("values") && !Regex("sw[\\d]+dp").containsMatchIn(file.name) && !file.name.startsWith("values-night")
-        }.orEmpty()
-
+        val valuesDirectories = androidResourceDirectory.valuesDirectories()
         val localeInAppProductsLocaleMap = localeInAppProducts.groupBy { it.locale }
         val allLocales = valuesDirectories.mapNotNull { valuesDirectory ->
           val stringsFile = valuesDirectory.resolve(app.androidResourceStringsFileName)
@@ -257,8 +324,7 @@ internal class InAppProducts : CoreCommand() {
             logger.log("""❌️ Android's ${app.androidResourceStringsFileName} file does not exist: $stringsFile""")
             null
           } else {
-            val valuesDirectoryName = valuesDirectory.name
-            val locale = LOCALE_VALUES_MAP.firstNotNullOfOrNull { (locale, directoryName) -> locale.takeIf { directoryName == valuesDirectoryName } } ?: error("Unsupported values directory $valuesDirectoryName which can't be mapped into a locale")
+            val locale = localeFromDirectoryName(valuesDirectory.name)
             val inAppProducts = localeInAppProductsLocaleMap[locale] ?: error("Inapp products are not translated for $locale")
             val allInAppProducts = inAppProducts.toMutableList()
 
@@ -296,6 +362,7 @@ internal class InAppProducts : CoreCommand() {
   }
 
   private fun stringsDirectoryFrom(locale: String) = LOCALE_VALUES_MAP[locale] ?: error("Unsupported locale $locale which can't be mapped into a strings directory")
+  private fun localeFromDirectoryName(name: String) = LOCALE_VALUES_MAP.firstNotNullOfOrNull { (locale, directoryName) -> locale.takeIf { directoryName == name } } ?: error("Unsupported values directory $name which can't be mapped into a locale")
 
   private fun writeFiles(
     appOutput: File,
@@ -368,3 +435,4 @@ private fun String.snakecase() = replace(" ", "_")
   .lowercase()
 
 private fun String.xmlEscaped() = replace("'", "\\'")
+private fun String.xmlUnescaped() = replace("\\'", "'")
