@@ -46,12 +46,6 @@ allprojects {
 }
 
 subprojects {
-  tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class.java).all {
-    kotlinOptions.freeCompilerArgs += listOf(
-      "-opt-in=kotlin.RequiresOptIn"
-    )
-  }
-
   tasks.withType(Test::class.java).all {
     testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
   }
