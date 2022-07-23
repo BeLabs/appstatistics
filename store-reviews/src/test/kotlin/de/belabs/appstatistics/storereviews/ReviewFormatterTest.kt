@@ -13,11 +13,11 @@ class ReviewFormatterTest {
 
     assertEquals(
       expected = """
-        ★☆☆☆☆ - Me - Android - 23.09.2020, 08:54:39
+        ★☆☆☆☆ - Me - My App (Android) - 23.09.2020, 08:54:39
 
         Really nice app. 1 stars
       """.trimIndent(),
-      actual = reviewFormatter.asText("Android", review1Star.copy(version = null)),
+      actual = reviewFormatter.asText("My App", "Android", review1Star.copy(version = null)),
     )
   }
 
@@ -26,13 +26,13 @@ class ReviewFormatterTest {
 
     assertEquals(
       expected = """
-        ★★★★★ - Me - iOS v1.0.0 - Sep 23, 2020, 8:54:39 AM
+        ★★★★★ - Me - App (iOS) v1.0.0 - Sep 23, 2020, 8:54:39 AM
 
         5 Stars title
 
         Really nice app. 5 stars
       """.trimIndent(),
-      actual = reviewFormatter.asText("iOS", review5Stars),
+      actual = reviewFormatter.asText("App", "iOS", review5Stars),
     )
   }
 
