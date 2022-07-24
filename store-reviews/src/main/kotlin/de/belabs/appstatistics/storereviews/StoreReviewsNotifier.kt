@@ -38,7 +38,7 @@ internal class StoreReviewsNotifier(
 
   suspend fun notify(logger: Logger, app: App, storeName: String, reviews: List<Review>) {
     notifySlack(logger, app, storeName, reviews)
-    notifyTelegram(logger, storeName, reviews)
+    notifyTelegram(logger, app, storeName, reviews)
   }
 
   private suspend fun notifySlack(logger: Logger, app: App, storeName: String, reviews: List<Review>) {
@@ -66,7 +66,7 @@ internal class StoreReviewsNotifier(
     }
   }
 
-  private suspend fun notifyTelegram(logger: Logger, storeName: String, reviews: List<Review>) {
+  private suspend fun notifyTelegram(logger: Logger, app: App, storeName: String, reviews: List<Review>) {
     telegramBotNotifierConfiguration?.let {
       val notifier = TelegramBotNotifier(it)
       val filteredReviews = reviews.filter { review -> it.reviewFilter.matches(review) && !directory.resolve(".telegram-${review.id}").exists() }
@@ -78,7 +78,11 @@ internal class StoreReviewsNotifier(
           notifier.notify(
             TelegramBotNotifierPayload(
               chatId = notifier.configuration.chatId,
-              text = reviewFormatter.asText(storeName, review),
+              text = reviewFormatter.asText(
+                appName = app.name,
+                storeName = storeName,
+                review = review,
+              ),
             ),
           )
 

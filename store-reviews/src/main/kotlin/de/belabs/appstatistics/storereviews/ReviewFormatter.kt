@@ -10,9 +10,9 @@ internal class ReviewFormatter(
   private val locale: Locale,
   private val zoneId: ZoneId,
 ) {
-  fun asText(storeName: String, review: Review): String {
+  fun asText(appName: String, storeName: String, review: Review): String {
     val stringBuilder = StringBuilder()
-    stringBuilder.append("${review.ratingLine()} - ${review.author} - $storeName")
+    stringBuilder.append("${review.ratingLine()} - ${review.author} - $appName ($storeName)")
 
     if (review.version != null) {
       stringBuilder.append(" v${review.version}")
