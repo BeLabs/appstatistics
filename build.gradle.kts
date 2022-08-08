@@ -34,7 +34,6 @@ rootProject.configure<com.vanniktech.code.quality.tools.CodeQualityToolsPluginEx
   }
   lint {
     checkAllWarnings = true
-    textReport = true // https://github.com/vanniktech/gradle-code-quality-tools-plugin/pull/227
   }
 }
 
@@ -49,9 +48,4 @@ subprojects {
   tasks.withType(Test::class.java).all {
     testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
   }
-}
-
-tasks.named<Wrapper>("wrapper") {
-  gradleVersion = libs.versions.gradle.get()
-  distributionType = Wrapper.DistributionType.ALL
 }
