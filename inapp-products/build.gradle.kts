@@ -1,16 +1,9 @@
 plugins {
-  kotlin("jvm")
-  kotlin("plugin.serialization")
   application
   id("com.github.johnrengelman.shadow")
+  kotlin("jvm")
+  kotlin("plugin.serialization")
 }
-
-application {
-  applicationName = "inapp-products"
-  mainClass.set("de.belabs.appstatistics.inappproducts.MainKt")
-}
-
-defaultTasks("run")
 
 kotlin {
   jvmToolchain {
@@ -24,4 +17,9 @@ dependencies {
 
 dependencies {
   testImplementation(libs.kotlin.test.junit)
+}
+
+application {
+  applicationName = "inapp-products"
+  mainClass.set("de.belabs.appstatistics.inappproducts.MainKt")
 }
