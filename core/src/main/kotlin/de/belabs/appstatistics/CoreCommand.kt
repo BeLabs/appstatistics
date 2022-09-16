@@ -10,8 +10,8 @@ import java.io.File
 
 abstract class CoreCommand : CliktCommand() {
   protected val directoryAppStatistics: File by option(help = "App statistics directory")
-      .convert { File(it) }
-      .default(File(System.getProperty("user.home")).resolve(".appstatistics"))
+    .convert { File(it) }
+    .default(File(System.getProperty("user.home")).resolve(".appstatistics"))
 
   protected val logger = Logger()
 

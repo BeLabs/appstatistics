@@ -1,5 +1,5 @@
 [versions]
-ktlint = "0.46.0"
+ktlint = "0.47.1"
 ktor = "2.1.1"
 kotlin = "1.7.10"
 

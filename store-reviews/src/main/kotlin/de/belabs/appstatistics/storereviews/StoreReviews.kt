@@ -19,12 +19,12 @@ import java.util.Locale
 
 internal class StoreReviews : CoreCommand() {
   private val locale: Locale by option(help = "Locale")
-      .convert { Locale(it) }
-      .default(Locale.getDefault())
+    .convert { Locale(it) }
+    .default(Locale.getDefault())
 
   private val timeZone: ZoneId by option(help = "Time zone")
-      .convert { ZoneId.of(it) }
-      .default(ZoneId.systemDefault())
+    .convert { ZoneId.of(it) }
+    .default(ZoneId.systemDefault())
 
   override suspend fun runOn(organization: String, root: File) {
     val directory = root.resolve("store-reviews/")
