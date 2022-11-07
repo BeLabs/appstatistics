@@ -2,6 +2,9 @@ package de.belabs.appstatistics.inappproducts
 
 import com.google.api.services.androidpublisher.model.InAppProduct
 import com.google.api.services.androidpublisher.model.InAppProductListing
+import com.vanniktech.locale.Country
+import com.vanniktech.locale.Language
+import com.vanniktech.locale.Locale
 import de.belabs.appstatistics.CoreCommand
 import de.belabs.appstatistics.inappproducts.store.PlayStore
 import de.belabs.appstatistics.inappproducts.store.Store
@@ -189,7 +192,7 @@ internal class InAppProducts : CoreCommand() {
 
       val modifiedInAppProducts = inAppProducts.mapNotNull { inAppProduct ->
         val hasChanged = valuesDirectories.map { valuesDirectory ->
-          val locale = localeFromDirectoryName(valuesDirectory.name)
+          val locale = valuesDirectory.googlePlayStoreLocale().toString()
           val stringsFile = valuesDirectory.resolve(app.androidResourceStringsFileName)
           val stringsContent = stringsFile.readLines()
           val linePrefixDescription = "${app.indentation}<string name=\"${resourceDescription(app, inAppProduct)}"
@@ -242,7 +245,8 @@ internal class InAppProducts : CoreCommand() {
     inAppProducts: List<InAppProduct>,
   ) {
     val localeInAppProducts = inAppProducts.flatMap { inAppProduct ->
-      inAppProduct.listings.flatMap { (locale, inAppProductListing) ->
+      inAppProduct.listings.flatMap { (localeString, inAppProductListing) ->
+        val locale = Locale.from(localeString)
         listOf(
           LocalisedInAppProduct(
             sku = inAppProduct.sku,
@@ -279,7 +283,16 @@ internal class InAppProducts : CoreCommand() {
     localeInAppProducts
       .groupBy { it.locale }
       .forEach { (locale, localisedInAppProducts) ->
-        val directory = stringsDirectory.resolve(stringsDirectoryFrom(locale))
+        val language = locale.language
+        val languageCode = language.legacyCode ?: language.code
+        val country = locale.country
+        val directory = stringsDirectory.resolve(
+          when {
+            language == Language.ENGLISH && country == Country.USA -> "values"
+            language.defaultCountry != country && country != null -> "values-$languageCode-r${country.code}"
+            else -> "values-$languageCode"
+          },
+        )
         directory.mkdirs()
 
         val strings = localisedInAppProducts.sortedBy { it.name }
@@ -304,6 +317,8 @@ internal class InAppProducts : CoreCommand() {
     file.isDirectory && file.name.startsWith("values") && !Regex("sw[\\d]+dp").containsMatchIn(file.name) && !file.name.startsWith("values-night")
   }.orEmpty()
 
+  private fun File.googlePlayStoreLocale() = Locale.fromAndroidValuesDirectoryName(name).googlePlayStoreLocale()!!
+
   private fun writeAndroidResourcesStringsFile(
     localeInAppProducts: List<LocalisedInAppProduct>,
     app: App,
@@ -323,7 +338,7 @@ internal class InAppProducts : CoreCommand() {
             logger.log("""❌️ Android's ${app.androidResourceStringsFileName} file does not exist: $stringsFile""")
             null
           } else {
-            val locale = localeFromDirectoryName(valuesDirectory.name)
+            val locale = Locale.from(valuesDirectory.googlePlayStoreLocale().toString())
             val inAppProducts = localeInAppProductsLocaleMap[locale] ?: error("Inapp products are not translated for $locale")
             val allInAppProducts = inAppProducts.toMutableList()
 
@@ -360,9 +375,6 @@ internal class InAppProducts : CoreCommand() {
     return null
   }
 
-  private fun stringsDirectoryFrom(locale: String) = LOCALE_VALUES_MAP[locale] ?: error("Unsupported locale $locale which can't be mapped into a strings directory")
-  private fun localeFromDirectoryName(name: String) = LOCALE_VALUES_MAP.firstNotNullOfOrNull { (locale, directoryName) -> locale.takeIf { directoryName == name } } ?: error("Unsupported values directory $name which can't be mapped into a locale")
-
   private fun writeFiles(
     appOutput: File,
     inAppProducts: List<InAppProduct>,
@@ -390,42 +402,11 @@ internal class InAppProducts : CoreCommand() {
 
   private data class LocalisedInAppProduct(
     val sku: String,
-    val locale: String,
+    val locale: Locale,
     val name: String,
     val value: String,
   ) {
     override fun toString() = """<string name="$name">${value.xmlEscaped()}</string>"""
-  }
-
-  companion object {
-    val LOCALE_VALUES_MAP = mapOf(
-      "en-US" to "values",
-      "ar" to "values-ar",
-      "bg" to "values-bg",
-      "cs-CZ" to "values-cs",
-      "de-DE" to "values-de",
-      "el-GR" to "values-el",
-      "es-ES" to "values-es",
-      "fi-FI" to "values-fi",
-      "fr-FR" to "values-fr",
-      "hu-HU" to "values-hu",
-      "id" to "values-in",
-      "it-IT" to "values-it",
-      "iw-IL" to "values-iw",
-      "nl-NL" to "values-nl",
-      "no-NO" to "values-no",
-      "pl-PL" to "values-pl",
-      "pt-BR" to "values-pt",
-      "pt-PT" to "values-pt-rBR",
-      "ro" to "values-ro",
-      "ru-RU" to "values-ru",
-      "sv-SE" to "values-sv",
-      "tr-TR" to "values-tr",
-      "uk" to "values-uk",
-      "vi" to "values-vi",
-      "zh-CN" to "values-zh-rCN",
-      "zh-TW" to "values-zh-rTW",
-    )
   }
 }
 

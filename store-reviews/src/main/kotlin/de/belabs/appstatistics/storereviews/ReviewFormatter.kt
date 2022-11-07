@@ -1,13 +1,15 @@
 package de.belabs.appstatistics.storereviews
 
+import com.vanniktech.locale.Language
+import com.vanniktech.locale.Locale
+import com.vanniktech.locale.toJavaLocale
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle.MEDIUM
-import java.util.Locale
 
 internal class ReviewFormatter(
-  private val locale: Locale,
+  private val language: Language,
   private val zoneId: ZoneId,
 ) {
   fun asText(appName: String, storeName: String, review: Review): String {
@@ -39,16 +41,16 @@ internal class ReviewFormatter(
     stringBuilder.append(">${review.content}\n")
 
     stringBuilder.append(
-      when (locale) {
-        Locale.GERMAN, Locale.GERMANY -> "von *${review.author}* am _${review.date()}_"
+      when (language) {
+        Language.GERMAN -> "von *${review.author}* am _${review.date()}_"
         else -> "by *${review.author}* on _${review.date()}_"
       },
     )
 
     if (review.version != null) {
       stringBuilder.append(
-        when (locale) {
-          Locale.GERMAN, Locale.GERMANY -> " mit Version _${review.version}_"
+        when (language) {
+          Language.GERMAN -> " mit Version _${review.version}_"
           else -> " with version _${review.version}_"
         },
       )
@@ -61,6 +63,6 @@ internal class ReviewFormatter(
     .plus("☆".repeat(5 - rating))
 
   private fun Review.date() = DateTimeFormatter.ofLocalizedDateTime(MEDIUM)
-    .withLocale(locale)
+    .withLocale(Locale(this@ReviewFormatter.language, null).toJavaLocale())
     .format(LocalDateTime.ofInstant(updated, zoneId))
 }

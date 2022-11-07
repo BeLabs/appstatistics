@@ -15,6 +15,7 @@ dependencies {
   api(libs.kotlinx.serialization.json)
   api(libs.ktor.client.core.jvm)
   api(libs.ktor.client.okhttp)
+  api(libs.multiplatform.locale)
 }
 
 dependencies {
