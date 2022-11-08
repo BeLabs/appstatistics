@@ -3,6 +3,8 @@ package de.belabs.appstatistics.storereviews
 import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
+import com.vanniktech.locale.Language
+import com.vanniktech.locale.Locales
 import de.belabs.appstatistics.CoreCommand
 import de.belabs.appstatistics.jsonPretty
 import de.belabs.appstatistics.storereviews.store.AppleStore
@@ -15,12 +17,11 @@ import java.io.File
 import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
-import java.util.Locale
 
 internal class StoreReviews : CoreCommand() {
-  private val locale: Locale by option(help = "Locale")
-    .convert { Locale(it) }
-    .default(Locale.getDefault())
+  private val locale: Language by option(help = "Language")
+    .convert { Language.from(it) }
+    .default(Language.fromLocale(Locales.currentLocaleString()))
 
   private val timeZone: ZoneId by option(help = "Time zone")
     .convert { ZoneId.of(it) }
