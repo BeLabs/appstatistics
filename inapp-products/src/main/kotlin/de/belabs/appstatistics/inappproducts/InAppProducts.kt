@@ -176,7 +176,6 @@ internal class InAppProducts : CoreCommand() {
    * have missing translations.
    * In this case, they have been added, and we want to update the listings also on the Play Console.
    */
-  @Suppress("RedundantSuspendModifier", "UNUSED_PARAMETER")
   private suspend fun updateMissingListingsFromApp(
     store: Store,
     app: App,
@@ -210,7 +209,7 @@ internal class InAppProducts : CoreCommand() {
       }
 
       if (modifiedInAppProducts.isNotEmpty()) {
-        logger.log("""🕵️‍️ Detected ${modifiedInAppProducts.size} changed in app products from your Android code""")
+        logger.log("""🕵️‍️ Detected ${modifiedInAppProducts.size} change(s) in app products from your Android code: ${modifiedInAppProducts.joinToString { it.sku } }""")
 
         val modifiedInAppProductsSkus = modifiedInAppProducts.map { it.sku }.toSet()
         val others = inAppProducts.filterNot { modifiedInAppProductsSkus.contains(it.sku) }
