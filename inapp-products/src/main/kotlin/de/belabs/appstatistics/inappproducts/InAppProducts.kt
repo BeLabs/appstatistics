@@ -339,21 +339,24 @@ internal class InAppProducts : CoreCommand() {
             null
           } else {
             val locale = Locale.from(valuesDirectory.googlePlayStoreLocale().toString())
-            val inAppProducts = localeInAppProductsLocaleMap[locale] ?: error("Inapp products are not translated for $locale")
-            val allInAppProducts = inAppProducts.toMutableList()
+            val inAppProducts = localeInAppProductsLocaleMap[locale]
 
-            stringsFile.writeText(
-              stringsFile.readLines().dropLast(1).joinToString(separator = "\n") { line ->
-                val match = inAppProducts.firstOrNull { line.contains(it.name) }
-                when {
-                  match != null -> {
-                    allInAppProducts.remove(match)
-                    "${app.indentation}$match"
+            if (inAppProducts != null) {
+              val allInAppProducts = inAppProducts.toMutableList()
+
+              stringsFile.writeText(
+                stringsFile.readLines().dropLast(1).joinToString(separator = "\n") { line ->
+                  val match = inAppProducts.firstOrNull { line.contains(it.name) }
+                  when {
+                    match != null -> {
+                      allInAppProducts.remove(match)
+                      "${app.indentation}$match"
+                    }
+                    else -> line
                   }
-                  else -> line
-                }
-              } + "\n" + allInAppProducts.joinToString(separator = "") { "${app.indentation}$it\n" } + "</resources>\n",
-            )
+                } + "\n" + allInAppProducts.joinToString(separator = "") { "${app.indentation}$it\n" } + "</resources>\n",
+              )
+            }
 
             locale
           }
