@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package de.belabs.appstatistics.storereviews.store
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
@@ -12,9 +10,10 @@ import de.belabs.appstatistics.storereviews.Review
 import java.io.File
 import java.time.Instant
 
-@Suppress("BlockingMethodInNonBlockingContext") internal class PlayStore(
-  private val credentialsFile: File,
+internal class PlayStore(
+  credentialsFile: File,
 ) : Store {
+  @Suppress("DEPRECATION")
   private val credentials = GoogleCredential.fromStream(credentialsFile.inputStream())
     .createScoped(listOf(AndroidPublisherScopes.ANDROIDPUBLISHER))
 
