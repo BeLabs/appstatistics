@@ -73,6 +73,7 @@ internal class InAppProducts : CoreCommand() {
 
         val inAppProducts = query(store, app, appOutput)
         updateMissingListingsFromApp(store, app, appOutput, inAppProducts)
+        logger.decreaseIndent()
       }
 
       appDirectory
@@ -170,7 +171,6 @@ internal class InAppProducts : CoreCommand() {
     }
 
     logger.log()
-    logger.decreaseIndent()
     return inAppProducts
   }
 
@@ -212,6 +212,7 @@ internal class InAppProducts : CoreCommand() {
       }
 
       if (modifiedInAppProducts.isNotEmpty()) {
+        logger.increaseIndent()
         logger.log("""🕵️‍️ Detected ${modifiedInAppProducts.size} change(s) in app products from your Android code: ${modifiedInAppProducts.joinToString { it.sku } }""")
 
         val modifiedInAppProductsSkus = modifiedInAppProducts.map { it.sku }.toSet()
@@ -226,6 +227,9 @@ internal class InAppProducts : CoreCommand() {
             inAppProduct
           },
         )
+
+        logger.log()
+        logger.decreaseIndent()
       }
     }
   }
