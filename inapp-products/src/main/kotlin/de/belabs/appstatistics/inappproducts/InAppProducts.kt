@@ -200,7 +200,7 @@ internal class InAppProducts : CoreCommand() {
           val description = stringsContent.firstOrNull { it.startsWith(linePrefixDescription) }?.removePrefix(linePrefixDescription)?.removePrefix("\">")?.removeSuffix("</string>")?.xmlUnescaped()
           val title = stringsContent.firstOrNull { it.startsWith(linePrefixTitle) }?.removePrefix(linePrefixTitle)?.removePrefix("\">")?.removeSuffix("</string>")?.xmlUnescaped()
           val current = inAppProduct.listings[locale]
-          val willChange = current?.title != title || current?.description != description
+          val willChange = current?.title() != title || current?.description() != description
           val match = current ?: InAppProductListing()
           match.title = title
           match.description = description
@@ -256,13 +256,13 @@ internal class InAppProducts : CoreCommand() {
             sku = inAppProduct.sku,
             locale = locale,
             name = resourceDescription(app, inAppProduct),
-            value = inAppProductListing.description,
+            value = inAppProductListing.description(),
           ),
           LocalisedInAppProduct(
             sku = inAppProduct.sku,
             locale = locale,
             name = resourceTitle(app, inAppProduct),
-            value = inAppProductListing.title,
+            value = inAppProductListing.title(),
           ),
         )
       }
@@ -423,3 +423,6 @@ private fun String.snakecase() = replace(" ", "_")
 
 private fun String.xmlEscaped() = replace("'", "\\'")
 private fun String.xmlUnescaped() = replace("\\'", "'")
+
+private fun InAppProductListing.title() = title.trim()
+private fun InAppProductListing.description() = description.trim()
