@@ -10,7 +10,7 @@ kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.4.1" }
 ktor-client-core-jvm = { module = "io.ktor:ktor-client-core-jvm", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
-multiplatform-locale = { module = "com.vanniktech:multiplatform-locale", version = "0.2.0" }
+multiplatform-locale = { module = "com.vanniktech:multiplatform-locale", version = "0.3.0" }
 plugin-kotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 plugin-kotlin-serialization = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
 plugin-shadowjar = { module = "gradle.plugin.com.github.johnrengelman:shadow", version = "7.1.2" }
