@@ -5,7 +5,7 @@ kotlin = "1.8.0"
 java = "19"
 
 [libraries]
-androidpublisher = { module = "com.google.apis:google-api-services-androidpublisher", version = "v3-rev20221108-2.0.0" }
+androidpublisher = { module = "com.google.apis:google-api-services-androidpublisher", version = "v3-rev20230117-2.0.0" }
 clikt = { module = "com.github.ajalt:clikt", version = "2.8.0" }
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.4.1" }
