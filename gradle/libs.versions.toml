@@ -1,6 +1,6 @@
 [versions]
 ktlint = "0.47.1"
-ktor = "2.2.1"
+ktor = "2.2.2"
 kotlin = "1.8.0"
 java = "19"
 
