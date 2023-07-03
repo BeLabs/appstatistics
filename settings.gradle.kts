@@ -3,11 +3,8 @@ pluginManagement {
     mavenCentral()
     google()
     gradlePluginPortal()
-    mavenLocal()
   }
 }
-
-enableFeaturePreview("VERSION_CATALOGS")
 
 include(":core")
 include(":inapp-products")
