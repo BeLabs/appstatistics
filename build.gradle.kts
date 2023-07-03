@@ -1,9 +1,4 @@
 buildscript {
-  repositories {
-    google()
-    mavenCentral()
-    gradlePluginPortal()
-  }
   dependencies {
     classpath(libs.plugin.kotlin)
     classpath(libs.plugin.kotlin.serialization)
@@ -41,7 +36,6 @@ allprojects {
   repositories {
     google()
     mavenCentral()
-    mavenLocal()
   }
 }
 
