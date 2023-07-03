@@ -17,4 +17,4 @@ plugin-kotlin-serialization = { module = "org.jetbrains.kotlin:kotlin-serializat
 plugin-shadowjar = { module = "gradle.plugin.com.github.johnrengelman:shadow", version = "7.1.2" }
 
 [plugins]
-codequalitytools = { id = "com.vanniktech.code.quality.tools", version = "0.22.0" }
+codequalitytools = { id = "com.vanniktech.code.quality.tools", version = "0.23.0" }
