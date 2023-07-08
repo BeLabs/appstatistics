@@ -4,7 +4,6 @@ package de.belabs.appstatistics.inappproducts.store
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
-import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.androidpublisher.AndroidPublisher
 import com.google.api.services.androidpublisher.AndroidPublisherScopes
@@ -48,18 +47,9 @@ import java.io.File
   override suspend fun edit(app: App, file: File): InAppProduct {
     val inAppProduct = inAppProduct(file, app)
 
-    return try {
-      androidPublisher.inappproducts()
-        .update(inAppProduct.packageName, inAppProduct.sku, inAppProduct)
-        .execute()
-    } catch (throwable: GoogleJsonResponseException) {
-      if (throwable.details.message == "Cannot update price - product has pricing template.") {
-        // https://issuetracker.google.com/issues/258484265
-        inAppProduct
-      } else {
-        throw throwable
-      }
-    }
+    return androidPublisher.inappproducts()
+      .update(inAppProduct.packageName, inAppProduct.sku, inAppProduct)
+      .execute()
   }
 
   override suspend fun edit(app: App, inAppProduct: InAppProduct): InAppProduct {
@@ -67,18 +57,9 @@ import java.io.File
       "Package names differ. Expected \"${app.androidPackageName}\" Actual: \"${inAppProduct.packageName}\""
     }
 
-    return try {
-      androidPublisher.inappproducts()
-        .update(inAppProduct.packageName, inAppProduct.sku, inAppProduct)
-        .execute()
-    } catch (throwable: GoogleJsonResponseException) {
-      if (throwable.details.message == "Cannot update price - product has pricing template.") {
-        // https://issuetracker.google.com/issues/258484265
-        inAppProduct
-      } else {
-        throw throwable
-      }
-    }
+    return androidPublisher.inappproducts()
+      .update(inAppProduct.packageName, inAppProduct.sku, inAppProduct)
+      .execute()
   }
 
   private fun inAppProduct(
