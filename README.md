@@ -28,6 +28,14 @@ Alternatively, you can also build a fat Jar using `./gradlew store-reviews:shado
 
 ![store-reviews/notifier-telegram-bot.png](store-reviews/notifier-telegram-bot.png)
 
+### Crontab
+
+It's best to build the project once using `./gradlew build` and then use crontab to fetch the reviews every now and then:
+
+```cron
+0 15 * * * java -jar $HOME/dev/GitHub/appstatistics/store-reviews/build/libs/store-reviews-all.jar
+```
+
 ## inapp-products
 
 - Uses the Google API to get inapp products
