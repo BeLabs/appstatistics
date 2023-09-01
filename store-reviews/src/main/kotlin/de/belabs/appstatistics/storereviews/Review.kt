@@ -1,14 +1,13 @@
 package de.belabs.appstatistics.storereviews
 
-import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.datetime.Instant
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Serializer
-import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveKind.LONG
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import java.time.Instant
 
 @Serializable internal data class Review(
   @SerialName("id") val id: String,
@@ -18,16 +17,18 @@ import java.time.Instant
   @SerialName("rating") val rating: Int,
   @SerialName("version") val version: String? = null,
   @SerialName("author") val author: String,
-  @SerialName("updated") @Serializable(with = InstantSerializer::class) val updated: Instant,
+  @SerialName("updated") @Serializable(with = InstantEpochMillisecondsSerializer::class) val updated: Instant,
 )
 
-@OptIn(ExperimentalSerializationApi::class)
-@Serializer(forClass = Instant::class) private object InstantSerializer {
-  override val descriptor get() = PrimitiveSerialDescriptor("InstantSerializer", PrimitiveKind.LONG)
+private object InstantEpochMillisecondsSerializer : KSerializer<Instant> {
+  override val descriptor get() = PrimitiveSerialDescriptor("InstantSerializer", LONG)
 
-  override fun deserialize(decoder: Decoder) = Instant.ofEpochMilli(decoder.decodeLong())
-
-  override fun serialize(encoder: Encoder, value: Instant) {
-    encoder.encodeLong(value.toEpochMilli())
+  override fun serialize(
+    encoder: Encoder,
+    value: Instant,
+  ) {
+    encoder.encodeLong(value.toEpochMilliseconds())
   }
+
+  override fun deserialize(decoder: Decoder) = Instant.fromEpochMilliseconds(decoder.decodeLong())
 }

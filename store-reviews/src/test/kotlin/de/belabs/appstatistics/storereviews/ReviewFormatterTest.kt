@@ -1,15 +1,15 @@
 package de.belabs.appstatistics.storereviews
 
 import com.vanniktech.locale.Language
+import kotlinx.datetime.TimeZone
 import org.junit.Test
-import java.time.ZoneId
 import kotlin.test.assertEquals
 
 class ReviewFormatterTest {
-  private val zoneId = ZoneId.of("Europe/Berlin")
+  private val timeZone = TimeZone.of("Europe/Berlin")
 
   @Test fun text1StarNoVersion() {
-    val reviewFormatter = ReviewFormatter(Language.GERMAN, zoneId)
+    val reviewFormatter = ReviewFormatter(Language.GERMAN, timeZone)
 
     assertEquals(
       expected = """
@@ -22,7 +22,7 @@ class ReviewFormatterTest {
   }
 
   @Test fun text5Stars() {
-    val reviewFormatter = ReviewFormatter(Language.ENGLISH, zoneId)
+    val reviewFormatter = ReviewFormatter(Language.ENGLISH, timeZone)
 
     assertEquals(
       expected = """
@@ -37,7 +37,7 @@ class ReviewFormatterTest {
   }
 
   @Test fun markdown1StarVersionNull() {
-    val reviewFormatter = ReviewFormatter(Language.GERMAN, zoneId)
+    val reviewFormatter = ReviewFormatter(Language.GERMAN, timeZone)
 
     assertEquals(
       expected = """
@@ -50,7 +50,7 @@ class ReviewFormatterTest {
   }
 
   @Test fun markdown5Stars() {
-    val reviewFormatter = ReviewFormatter(Language.ENGLISH, zoneId)
+    val reviewFormatter = ReviewFormatter(Language.ENGLISH, timeZone)
 
     assertEquals(
       expected = """

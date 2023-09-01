@@ -3,14 +3,16 @@ package de.belabs.appstatistics.storereviews
 import com.vanniktech.locale.Language
 import com.vanniktech.locale.Locale
 import com.vanniktech.locale.toJavaLocale
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toJavaInstant
+import kotlinx.datetime.toJavaZoneId
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle.MEDIUM
 
 internal class ReviewFormatter(
   private val language: Language,
-  private val zoneId: ZoneId,
+  private val timeZone: TimeZone,
 ) {
   fun asText(appName: String, storeName: String, review: Review): String {
     val stringBuilder = StringBuilder()
@@ -64,5 +66,5 @@ internal class ReviewFormatter(
 
   private fun Review.date() = DateTimeFormatter.ofLocalizedDateTime(MEDIUM)
     .withLocale(Locale(this@ReviewFormatter.language, null).toJavaLocale())
-    .format(LocalDateTime.ofInstant(updated, zoneId))
+    .format(LocalDateTime.ofInstant(updated.toJavaInstant(), timeZone.toJavaZoneId()))
 }

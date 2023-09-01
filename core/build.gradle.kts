@@ -12,6 +12,7 @@ kotlin {
 dependencies {
   api(libs.androidpublisher)
   api(libs.clikt)
+  api(libs.kotlinx.datetime)
   api(libs.kotlinx.serialization.json)
   api(libs.ktor.client.core.jvm)
   api(libs.ktor.client.okhttp)

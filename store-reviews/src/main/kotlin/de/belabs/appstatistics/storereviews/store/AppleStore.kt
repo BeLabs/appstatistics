@@ -9,6 +9,7 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.URLProtocol
 import io.ktor.http.isSuccess
+import kotlinx.datetime.toKotlinInstant
 import org.w3c.dom.Element
 import org.xml.sax.InputSource
 import java.io.StringReader
@@ -48,7 +49,7 @@ internal class AppleStore : Store {
                     title = it.string("title"),
                     content = it.string("content"),
                     language = language,
-                    updated = OffsetDateTime.parse(it.string("updated")).toInstant(),
+                    updated = OffsetDateTime.parse(it.string("updated")).toInstant().toKotlinInstant(),
                     rating = it.string("im:rating").toInt(),
                     version = it.string("im:version"),
                     author = (it.getElementsByTagName("author").item(0) as Element).string("name"),

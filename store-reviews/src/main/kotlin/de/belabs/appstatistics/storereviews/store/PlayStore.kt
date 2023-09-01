@@ -9,11 +9,11 @@ import com.google.api.services.androidpublisher.AndroidPublisher
 import com.google.api.services.androidpublisher.AndroidPublisherScopes
 import de.belabs.appstatistics.storereviews.App
 import de.belabs.appstatistics.storereviews.Review
+import kotlinx.datetime.Instant
 import java.io.File
-import java.time.Instant
 
-@Suppress("BlockingMethodInNonBlockingContext") internal class PlayStore(
-  private val credentialsFile: File,
+internal class PlayStore(
+  credentialsFile: File,
 ) : Store {
   private val credentials = GoogleCredential.fromStream(credentialsFile.inputStream())
     .createScoped(listOf(AndroidPublisherScopes.ANDROIDPUBLISHER))
@@ -38,7 +38,7 @@ import java.time.Instant
             version = comment.userComment.appVersionName,
             language = comment.userComment.reviewerLanguage,
             author = it.authorName ?: "?",
-            updated = Instant.ofEpochSecond(comment.userComment.lastModified.seconds),
+            updated = Instant.fromEpochSeconds(comment.userComment.lastModified.seconds),
           )
         }
     }
