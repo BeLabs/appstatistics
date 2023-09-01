@@ -1,6 +1,6 @@
 package de.belabs.appstatistics.storereviews
 
-import java.time.Instant
+import kotlinx.datetime.Instant
 
 internal val review1Star = Review(
   id = "review-1-stars",
@@ -9,7 +9,7 @@ internal val review1Star = Review(
   language = "EN",
   version = "1.0.0",
   author = "Me",
-  updated = Instant.ofEpochSecond(1600844079),
+  updated = Instant.fromEpochSeconds(1600844079),
 )
 
 internal val review5Stars = Review(
@@ -20,5 +20,5 @@ internal val review5Stars = Review(
   language = "en",
   version = "1.0.0",
   author = "Me",
-  updated = Instant.ofEpochSecond(1600844079),
+  updated = Instant.fromEpochSeconds(1600844079),
 )

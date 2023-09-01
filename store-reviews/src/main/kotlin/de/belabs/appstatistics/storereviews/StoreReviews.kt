@@ -12,20 +12,22 @@ import de.belabs.appstatistics.storereviews.store.PlayStore
 import de.belabs.appstatistics.storereviews.store.Store
 import de.belabs.notifier.slack.SlackNotifier
 import de.belabs.notifier.telegrambot.TelegramBotNotifier
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
 import kotlinx.serialization.builtins.ListSerializer
 import java.io.File
-import java.time.Instant
-import java.time.ZoneId
-import java.time.temporal.ChronoUnit
+import kotlin.time.Duration.Companion.days
 
 internal class StoreReviews : CoreCommand() {
   private val locale: Language by option(help = "Language")
     .convert { Language.from(it) }
     .default(Language.fromLocale(Locales.currentLocaleString()))
 
-  private val timeZone: ZoneId by option(help = "Time zone")
-    .convert { ZoneId.of(it) }
-    .default(ZoneId.systemDefault())
+  private val timeZone: TimeZone by option(help = "Time zone")
+    .convert { TimeZone.of(it) }
+    .default(TimeZone.currentSystemDefault())
+
+  private val clock = Clock.System
 
   override suspend fun runOn(organization: String, root: File) {
     val directory = root.resolve("store-reviews/")
@@ -120,7 +122,7 @@ internal class StoreReviews : CoreCommand() {
             .map { it.nameWithoutExtension },
         )
           .map { jsonPretty.decodeFromString(Review.serializer(), appOutput.resolve("$it.json").readText()) }
-          .filter { notifiers.canNotify(it) && it.updated >= Instant.now().minus(10, ChronoUnit.DAYS) }
+          .filter { notifiers.canNotify(it) && it.updated >= clock.now().minus(10.days) }
 
         val reviews = store.reviews(app)
           .sortedBy { it.updated }
