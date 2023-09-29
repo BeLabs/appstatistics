@@ -421,7 +421,7 @@ internal class InAppProducts : CoreCommand() {
 private fun String.snakecase() = replace(" ", "_")
   .lowercase()
 
-private fun String.xmlEscaped() = replace("'", "\\'")
+private fun String.xmlEscaped() = replace("'", "’")
 private fun String.xmlUnescaped() = replace("\\'", "'")
 
 private fun InAppProductListing.title() = title.trim()
