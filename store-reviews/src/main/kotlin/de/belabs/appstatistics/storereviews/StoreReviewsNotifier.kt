@@ -24,17 +24,13 @@ internal class StoreReviewsNotifier(
 
   fun isEmpty() = slackNotifierConfiguration == null && telegramBotNotifierConfiguration == null
 
-  fun missing(reviewIds: List<String>): List<String> {
-    return reviewIds.filter { reviewId ->
-      (slackNotifierConfiguration != null && !directory.resolve(".$reviewId-slack").exists()) ||
-        (telegramBotNotifierConfiguration != null && !directory.resolve(".$reviewId-telegram").exists())
-    }
+  fun missing(reviewIds: List<String>): List<String> = reviewIds.filter { reviewId ->
+    (slackNotifierConfiguration != null && !directory.resolve(".$reviewId-slack").exists()) ||
+      (telegramBotNotifierConfiguration != null && !directory.resolve(".$reviewId-telegram").exists())
   }
 
-  fun canNotify(review: Review): Boolean {
-    return (slackNotifierConfiguration != null && slackNotifierConfiguration.reviewFilter.matches(review)) ||
-      (telegramBotNotifierConfiguration != null && telegramBotNotifierConfiguration.reviewFilter.matches(review))
-  }
+  fun canNotify(review: Review): Boolean = (slackNotifierConfiguration != null && slackNotifierConfiguration.reviewFilter.matches(review)) ||
+    (telegramBotNotifierConfiguration != null && telegramBotNotifierConfiguration.reviewFilter.matches(review))
 
   suspend fun notify(logger: Logger, app: App, storeName: String, reviews: List<Review>) {
     notifySlack(logger, app, storeName, reviews)
@@ -116,7 +112,8 @@ internal interface StoreReviewsNotifierConfiguration {
   @SerialName("username") val username: String? = null,
   @SerialName("hook") override val hook: String,
   @SerialName("review_filter") override val reviewFilter: NotifierReviewFilter? = null,
-) : SlackNotifierConfiguration, StoreReviewsNotifierConfiguration {
+) : SlackNotifierConfiguration,
+  StoreReviewsNotifierConfiguration {
   override fun asString(json: Json) = json.encodeToString(serializer(), this)
 
   companion object {
@@ -133,7 +130,8 @@ internal interface StoreReviewsNotifierConfiguration {
   @SerialName("bot_token") override val botToken: String,
   @SerialName("chat_id") val chatId: Long,
   @SerialName("review_filter") override val reviewFilter: NotifierReviewFilter? = null,
-) : TelegramBotNotifierConfiguration, StoreReviewsNotifierConfiguration {
+) : TelegramBotNotifierConfiguration,
+  StoreReviewsNotifierConfiguration {
   override fun asString(json: Json) = json.encodeToString(serializer(), this)
 
   companion object {
