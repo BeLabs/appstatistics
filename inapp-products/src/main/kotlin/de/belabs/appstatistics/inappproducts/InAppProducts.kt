@@ -318,7 +318,7 @@ internal class InAppProducts : CoreCommand() {
   }
 
   private fun File.valuesDirectories() = listFiles { file ->
-    file.isDirectory && file.name.startsWith("values") && !Regex("sw[\\d]+dp").containsMatchIn(file.name) && !file.name.startsWith("values-night")
+    file.isDirectory && file.name.startsWith("values") && !Regex("sw[\\d]+dp").containsMatchIn(file.name) && !file.name.startsWith("values-night") && !file.name.startsWith("values-land")
   }.orEmpty()
 
   private fun File.googlePlayStoreLocale() = Locale.fromAndroidValuesDirectoryName(name).googlePlayStoreLocale()!!
