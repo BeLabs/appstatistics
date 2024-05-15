@@ -72,7 +72,12 @@ internal class InAppProducts : CoreCommand() {
         )
 
         val inAppProducts = query(store, app, appOutput)
-        updateMissingListingsFromApp(store, app, appOutput, inAppProducts)
+        val hasChanges = updateInAppProductsFromApp(store, app, appOutput, inAppProducts)
+
+        if (!hasChanges) {
+          writeStringsFile(app, appOutput, inAppProducts)
+        }
+
         logger.decreaseIndent()
       }
 
@@ -166,25 +171,26 @@ internal class InAppProducts : CoreCommand() {
 
     writeFiles(appOutput, inAppProducts)
 
-    if (hasInAppProducts) {
-      writeStringsFile(app, appOutput, inAppProducts)
-    }
+    // if (hasInAppProducts) {
+    //   writeStringsFile(app, appOutput, inAppProducts)
+    // }
 
     logger.log()
     return inAppProducts
   }
 
   /**
-   * Looks at the strings xml files from the [app] and checks if any of the [inAppProducts]
+   * It looks at the strings xml files from the [app] and checks if any of the [inAppProducts]
    * have missing translations.
    * In this case, they have been added, and we want to update the listings also on the Play Console.
+   * Returns true if there are updates from the app.
    */
-  private suspend fun updateMissingListingsFromApp(
+  private suspend fun updateInAppProductsFromApp(
     store: Store,
     app: App,
     appOutput: File,
     inAppProducts: List<InAppProduct>,
-  ) {
+  ): Boolean {
     val androidResourceDirectory = app.androidResourceDirectory?.let(::File)
 
     if (androidResourceDirectory != null && androidResourceDirectory.exists()) {
@@ -230,8 +236,11 @@ internal class InAppProducts : CoreCommand() {
 
         logger.log()
         logger.decreaseIndent()
+        return true
       }
     }
+
+    return false
   }
 
   private fun resourcePrefix(app: App, inAppProduct: InAppProduct) =
