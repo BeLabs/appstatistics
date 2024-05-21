@@ -1,7 +1,7 @@
 [versions]
 ktlint = "1.2.1"
 ktor = "2.3.11"
-kotlin = "1.9.24"
+kotlin = "2.0.0"
 java = "19"
 
 [libraries]
