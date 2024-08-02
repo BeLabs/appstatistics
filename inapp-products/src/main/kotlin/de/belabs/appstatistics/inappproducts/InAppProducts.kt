@@ -298,11 +298,11 @@ internal class InAppProducts : CoreCommand() {
       .forEach { (locale, localisedInAppProducts) ->
         val language = locale.language
         val languageCode = language.legacyCode ?: language.code
-        val country = locale.country
+        val territory = locale.territory
         val directory = stringsDirectory.resolve(
           when {
-            language == Language.ENGLISH && country == Country.USA -> "values"
-            language.defaultCountry != country && country != null -> "values-$languageCode-r${country.code}"
+            language == Language.ENGLISH && territory == Country.USA -> "values"
+            language.defaultCountry != territory && territory != null -> "values-$languageCode-r${territory.code}"
             else -> "values-$languageCode"
           },
         )
