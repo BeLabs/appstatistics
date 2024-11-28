@@ -243,14 +243,11 @@ internal class InAppProducts : CoreCommand() {
     return false
   }
 
-  private fun resourcePrefix(app: App, inAppProduct: InAppProduct) =
-    "${app.name.snakecase()}_inapp_${inAppProduct.sku}_"
+  private fun resourcePrefix(app: App, inAppProduct: InAppProduct) = "${app.name.snakecase()}_inapp_${inAppProduct.sku}_"
 
-  private fun resourceTitle(app: App, inAppProduct: InAppProduct) =
-    "${resourcePrefix(app, inAppProduct)}title"
+  private fun resourceTitle(app: App, inAppProduct: InAppProduct) = "${resourcePrefix(app, inAppProduct)}title"
 
-  private fun resourceDescription(app: App, inAppProduct: InAppProduct) =
-    "${resourcePrefix(app, inAppProduct)}description"
+  private fun resourceDescription(app: App, inAppProduct: InAppProduct) = "${resourcePrefix(app, inAppProduct)}description"
 
   private fun writeStringsFile(
     app: App,

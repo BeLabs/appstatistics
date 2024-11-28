@@ -18,11 +18,9 @@ class TelegramBotNotifier<Configuration : TelegramBotNotifierConfiguration>(
   private val json = Json
   private val httpClient = HttpClient(OkHttp.create())
 
-  override fun name() =
-    "Telegram Bot"
+  override fun name() = "Telegram Bot"
 
-  override fun emoji() =
-    """✈️ """
+  override fun emoji() = """✈️ """
 
   override suspend fun notify(payload: TelegramBotNotifierPayload) {
     httpClient.post("https://api.telegram.org/bot${configuration.botToken}/sendMessage") {

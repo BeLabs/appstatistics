@@ -18,11 +18,9 @@ class SlackNotifier<Configuration : SlackNotifierConfiguration>(
   private val json = Json
   private val httpClient = HttpClient(OkHttp.create())
 
-  override fun name() =
-    "Slack"
+  override fun name() = "Slack"
 
-  override fun emoji() =
-    """📱"""
+  override fun emoji() = """📱"""
 
   override suspend fun notify(payload: SlackNotifierPayload) {
     httpClient.post(configuration.hook) {
