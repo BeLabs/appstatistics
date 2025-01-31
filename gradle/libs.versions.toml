@@ -3,6 +3,7 @@ ktlint = "1.4.1"
 ktor = "3.0.3"
 kotlin = "2.1.10"
 java = "19"
+multiplatform-locale = "0.9.0"
 
 [libraries]
 androidpublisher = { module = "com.google.apis:google-api-services-androidpublisher", version = "v3-rev20250102-2.0.0" }
@@ -12,7 +13,8 @@ kotlinx-datetime = "org.jetbrains.kotlinx:kotlinx-datetime:0.6.1"
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.8.0" }
 ktor-client-core-jvm = { module = "io.ktor:ktor-client-core-jvm", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
-multiplatform-locale = { module = "com.vanniktech:multiplatform-locale", version = "0.9.0" }
+multiplatform-locale = { module = "com.vanniktech:multiplatform-locale", version.ref = "multiplatform-locale" }
+multiplatform-locale-google-play-store = { module = "com.vanniktech:multiplatform-locale-google-play-store", version.ref = "multiplatform-locale" }
 plugin-kotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 plugin-kotlin-serialization = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
 plugin-shadowjar = { module = "com.gradleup.shadow:shadow-gradle-plugin", version = "8.3.5" }
