@@ -5,6 +5,7 @@ import com.google.api.services.androidpublisher.model.InAppProductListing
 import com.vanniktech.locale.Country
 import com.vanniktech.locale.Language
 import com.vanniktech.locale.Locale
+import com.vanniktech.locale.google.play.store.googlePlayStoreLocale
 import de.belabs.appstatistics.CoreCommand
 import de.belabs.appstatistics.inappproducts.store.PlayStore
 import de.belabs.appstatistics.inappproducts.store.Store

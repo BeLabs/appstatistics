@@ -17,6 +17,7 @@ dependencies {
   api(libs.ktor.client.core.jvm)
   api(libs.ktor.client.okhttp)
   api(libs.multiplatform.locale)
+  api(libs.multiplatform.locale.google.play.store)
 }
 
 dependencies {
