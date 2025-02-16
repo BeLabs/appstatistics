@@ -1,12 +1,11 @@
-@file:Suppress("DEPRECATION")
-
 package de.belabs.appstatistics.storereviews.store
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.androidpublisher.AndroidPublisher
 import com.google.api.services.androidpublisher.AndroidPublisherScopes
+import com.google.auth.http.HttpCredentialsAdapter
+import com.google.auth.oauth2.GoogleCredentials
 import de.belabs.appstatistics.storereviews.App
 import de.belabs.appstatistics.storereviews.Review
 import kotlinx.datetime.Instant
@@ -15,10 +14,10 @@ import java.io.File
 internal class PlayStore(
   credentialsFile: File,
 ) : Store {
-  private val credentials = GoogleCredential.fromStream(credentialsFile.inputStream())
+  private val credentials = GoogleCredentials.fromStream(credentialsFile.inputStream())
     .createScoped(listOf(AndroidPublisherScopes.ANDROIDPUBLISHER))
 
-  private val androidPublisher = AndroidPublisher.Builder(GoogleNetHttpTransport.newTrustedTransport(), GsonFactory.getDefaultInstance(), credentials)
+  private val androidPublisher = AndroidPublisher.Builder(GoogleNetHttpTransport.newTrustedTransport(), GsonFactory.getDefaultInstance(), HttpCredentialsAdapter(credentials))
     .setApplicationName("store-reviews")
     .build()
 
