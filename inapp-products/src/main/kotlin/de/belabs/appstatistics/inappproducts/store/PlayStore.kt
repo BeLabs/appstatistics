@@ -1,23 +1,22 @@
-@file:Suppress("DEPRECATION")
-
 package de.belabs.appstatistics.inappproducts.store
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.androidpublisher.AndroidPublisher
 import com.google.api.services.androidpublisher.AndroidPublisherScopes
 import com.google.api.services.androidpublisher.model.InAppProduct
+import com.google.auth.http.HttpCredentialsAdapter
+import com.google.auth.oauth2.GoogleCredentials
 import de.belabs.appstatistics.inappproducts.App
 import java.io.File
 
-@Suppress("BlockingMethodInNonBlockingContext") internal class PlayStore(
-  private val credentialsFile: File,
+internal class PlayStore(
+  credentialsFile: File,
 ) : Store {
-  private val credentials = GoogleCredential.fromStream(credentialsFile.inputStream())
+  private val credentials = GoogleCredentials.fromStream(credentialsFile.inputStream())
     .createScoped(listOf(AndroidPublisherScopes.ANDROIDPUBLISHER))
 
-  private val androidPublisher = AndroidPublisher.Builder(GoogleNetHttpTransport.newTrustedTransport(), GsonFactory.getDefaultInstance(), credentials)
+  private val androidPublisher = AndroidPublisher.Builder(GoogleNetHttpTransport.newTrustedTransport(), GsonFactory.getDefaultInstance(), HttpCredentialsAdapter(credentials))
     .setApplicationName("inapp-products")
     .build()
 
