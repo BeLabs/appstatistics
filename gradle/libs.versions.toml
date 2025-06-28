@@ -1,7 +1,7 @@
 [versions]
 ktlint = "1.4.1"
 ktor = "3.2.0"
-kotlin = "2.1.21"
+kotlin = "2.2.0"
 java = "19"
 multiplatform-locale = "0.9.0"
 
