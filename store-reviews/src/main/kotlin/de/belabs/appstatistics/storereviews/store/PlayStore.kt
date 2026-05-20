@@ -8,8 +8,8 @@ import com.google.auth.http.HttpCredentialsAdapter
 import com.google.auth.oauth2.GoogleCredentials
 import de.belabs.appstatistics.storereviews.App
 import de.belabs.appstatistics.storereviews.Review
-import kotlinx.datetime.Instant
 import java.io.File
+import kotlin.time.Instant
 
 internal class PlayStore(
   credentialsFile: File,

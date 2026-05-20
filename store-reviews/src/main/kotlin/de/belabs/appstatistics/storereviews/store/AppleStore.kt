@@ -9,12 +9,12 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.URLProtocol
 import io.ktor.http.isSuccess
-import kotlinx.datetime.toKotlinInstant
 import org.w3c.dom.Element
 import org.xml.sax.InputSource
 import java.io.StringReader
 import java.time.OffsetDateTime
 import javax.xml.parsers.DocumentBuilderFactory
+import kotlin.time.toKotlinInstant
 
 internal class AppleStore : Store {
   private val httpClient = HttpClient(OkHttp.create()) {
