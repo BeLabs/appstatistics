@@ -12,10 +12,10 @@ import de.belabs.appstatistics.storereviews.store.PlayStore
 import de.belabs.appstatistics.storereviews.store.Store
 import de.belabs.notifier.slack.SlackNotifier
 import de.belabs.notifier.telegrambot.TelegramBotNotifier
-import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.builtins.ListSerializer
 import java.io.File
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 
 internal class StoreReviews : CoreCommand() {

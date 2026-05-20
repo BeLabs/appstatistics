@@ -4,11 +4,11 @@ import com.vanniktech.locale.Language
 import com.vanniktech.locale.Locale
 import com.vanniktech.locale.toJavaLocale
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toJavaZoneId
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle.MEDIUM
+import kotlin.time.toJavaInstant
 
 internal class ReviewFormatter(
   private val language: Language,

@@ -1,6 +1,6 @@
 package de.belabs.appstatistics.storereviews
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 internal val review1Star = Review(
   id = "review-1-stars",
