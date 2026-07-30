@@ -3,7 +3,7 @@ ktlint = "1.8.0"
 ktor = "3.5.1"
 kotlin = "2.4.10"
 java = "19"
-multiplatform-locale = "0.10.0"
+multiplatform-locale = "0.11.0"
 
 [libraries]
 androidpublisher = { module = "com.google.apis:google-api-services-androidpublisher", version = "v3-rev20260723-2.0.0" }
