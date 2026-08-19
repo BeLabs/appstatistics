@@ -26,7 +26,7 @@ class ReviewFormatterTest {
 
     assertEquals(
       expected = """
-        ★★★★★ - Me - App (iOS) v1.0.0 - Sep 23, 2020, 8:54:39 AM
+        ★★★★★ - Me - App (iOS) v1.0.0 - Sep 23, 2020, 8:54:39 AM
 
         5 Stars title
 
@@ -57,7 +57,7 @@ class ReviewFormatterTest {
         ★★★★★
         >*5 Stars title*
         >Really nice app. 5 stars
-        by *Me* on _Sep 23, 2020, 8:54:39 AM_ with version _1.0.0_
+        by *Me* on _Sep 23, 2020, 8:54:39 AM_ with version _1.0.0_
       """.trimIndent(),
       actual = reviewFormatter.asMarkdown(review5Stars),
     )

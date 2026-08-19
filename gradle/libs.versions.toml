@@ -2,7 +2,7 @@
 ktlint = "1.8.0"
 ktor = "3.5.2"
 kotlin = "2.4.10"
-java = "19"
+java = "21"
 multiplatform-locale = "0.10.0"
 
 [libraries]
