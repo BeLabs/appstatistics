@@ -9,6 +9,8 @@ import com.vanniktech.locale.google.play.store.googlePlayStoreLocale
 import de.belabs.appstatistics.CoreCommand
 import de.belabs.appstatistics.inappproducts.store.PlayStore
 import de.belabs.appstatistics.inappproducts.store.Store
+import de.belabs.appstatistics.inappproducts.store.StoreInAppProduct
+import de.belabs.appstatistics.inappproducts.store.StoreInAppProductListing
 import de.belabs.appstatistics.jsonPretty
 import kotlinx.serialization.builtins.ListSerializer
 import java.io.File
@@ -160,7 +162,7 @@ internal class InAppProducts : CoreCommand() {
     store: Store,
     app: App,
     appOutput: File,
-  ): List<InAppProduct> {
+  ): List<StoreInAppProduct> {
     logger.log("""🔍 Querying ${store.name()} ${app.name} products""")
     logger.increaseIndent()
 
@@ -190,15 +192,21 @@ internal class InAppProducts : CoreCommand() {
     store: Store,
     app: App,
     appOutput: File,
-    inAppProducts: List<InAppProduct>,
+    inAppProducts: List<StoreInAppProduct>,
   ): Boolean {
+    if (app.readOnly) {
+      return false
+    }
+
     val androidResourceDirectory = app.androidResourceDirectory?.let(::File)
 
     if (androidResourceDirectory != null && androidResourceDirectory.exists()) {
       val valuesDirectories = androidResourceDirectory.valuesDirectories()
 
       val modifiedInAppProducts = inAppProducts.mapNotNull { inAppProduct ->
-        val hasChanged = valuesDirectories.map { valuesDirectory ->
+        val listings = inAppProduct.listings.toMutableMap()
+
+        valuesDirectories.map { valuesDirectory ->
           val locale = valuesDirectory.googlePlayStoreLocale().toString()
           val stringsFile = valuesDirectory.resolve(app.androidResourceStringsFileName)
           val stringsContent = stringsFile.readLines()
@@ -207,15 +215,35 @@ internal class InAppProducts : CoreCommand() {
           val description = stringsContent.firstOrNull { it.startsWith(linePrefixDescription) }?.removePrefix(linePrefixDescription)?.removePrefix("\">")?.removeSuffix("</string>")?.xmlUnescaped()
           val title = stringsContent.firstOrNull { it.startsWith(linePrefixTitle) }?.removePrefix(linePrefixTitle)?.removePrefix("\">")?.removeSuffix("</string>")?.xmlUnescaped()
           val current = inAppProduct.listings[locale]
-          val willChange = current?.title() != title || current?.description() != description
-          val match = current ?: InAppProductListing()
-          match.title = title
-          match.description = description
-          inAppProduct.listings = inAppProduct.listings + (locale to match)
-          willChange
-        }.any { it }
+          val willChange = current?.title != title || current?.description != description
 
-        inAppProduct.takeIf { hasChanged }
+          if (willChange) {
+            logger.log("""Change in $locale for ${inAppProduct.sku}""")
+
+            if (current?.title != title) {
+              logger.log("""Title changed from ${current?.title} to $title""")
+            }
+
+            if (current?.description != description) {
+              logger.log("""Title changed from ${current?.description} to $description""")
+            }
+
+            listings += (
+              locale to StoreInAppProductListing(
+                title = title.orEmpty(),
+                description = description.orEmpty(),
+              )
+            )
+          } else {
+            null
+          }
+        }
+
+        if (listings != inAppProduct.listings) {
+          inAppProduct.copy(listings = listings)
+        } else {
+          null
+        }
       }
 
       if (modifiedInAppProducts.isNotEmpty()) {
@@ -244,16 +272,16 @@ internal class InAppProducts : CoreCommand() {
     return false
   }
 
-  private fun resourcePrefix(app: App, inAppProduct: InAppProduct) = "${app.name.snakecase()}_inapp_${inAppProduct.sku}_"
+  private fun resourcePrefix(app: App, inAppProduct: StoreInAppProduct) = "${app.name.snakecase()}_inapp_${inAppProduct.sku}_"
 
-  private fun resourceTitle(app: App, inAppProduct: InAppProduct) = "${resourcePrefix(app, inAppProduct)}title"
+  private fun resourceTitle(app: App, inAppProduct: StoreInAppProduct) = "${resourcePrefix(app, inAppProduct)}title"
 
-  private fun resourceDescription(app: App, inAppProduct: InAppProduct) = "${resourcePrefix(app, inAppProduct)}description"
+  private fun resourceDescription(app: App, inAppProduct: StoreInAppProduct) = "${resourcePrefix(app, inAppProduct)}description"
 
   private fun writeStringsFile(
     app: App,
     appOutput: File,
-    inAppProducts: List<InAppProduct>,
+    inAppProducts: List<StoreInAppProduct>,
   ) {
     val localeInAppProducts = inAppProducts.flatMap { inAppProduct ->
       inAppProduct.listings.flatMap { (localeString, inAppProductListing) ->
@@ -263,13 +291,13 @@ internal class InAppProducts : CoreCommand() {
             sku = inAppProduct.sku,
             locale = locale,
             name = resourceDescription(app, inAppProduct),
-            value = inAppProductListing.description(),
+            value = inAppProductListing.description,
           ),
           LocalisedInAppProduct(
             sku = inAppProduct.sku,
             locale = locale,
             name = resourceTitle(app, inAppProduct),
-            value = inAppProductListing.title(),
+            value = inAppProductListing.title,
           ),
         )
       }
@@ -339,6 +367,8 @@ internal class InAppProducts : CoreCommand() {
     if (androidResourceDirectory != null) {
       if (!androidResourceDirectory.exists()) {
         logger.log("""❌️ Android resource directory does not exist: $androidResourceDirectory""")
+      } else if (app.readOnly) {
+        logger.log("""⏩️ Skipping writing strings.xml since it is read only""")
       } else {
         val valuesDirectories = androidResourceDirectory.valuesDirectories()
         val localeInAppProductsLocaleMap = localeInAppProducts.groupBy { it.locale }
@@ -391,7 +421,7 @@ internal class InAppProducts : CoreCommand() {
 
   private fun writeFiles(
     appOutput: File,
-    inAppProducts: List<InAppProduct>,
+    inAppProducts: List<StoreInAppProduct>,
   ) {
     val deletedFiles = appOutput.listFiles { file -> file.extension == "json" }.orEmpty().toSet()
     deletedFiles.forEach { it.delete() }
@@ -407,10 +437,10 @@ internal class InAppProducts : CoreCommand() {
     }
   }
 
-  private fun File.write(inAppProduct: InAppProduct): File {
+  private fun File.write(inAppProduct: StoreInAppProduct): File {
     val file = resolve("${inAppProduct.sku}.json")
     logger.log("""✍️ Writing ${inAppProduct.sku} to $file""")
-    file.writeText(inAppProduct.toPrettyString())
+    file.writeText(inAppProduct.prettyString)
     return file
   }
 
@@ -430,6 +460,3 @@ private fun String.snakecase() = replace(" ", "_")
 
 private fun String.xmlEscaped() = replace("'", "’")
 private fun String.xmlUnescaped() = replace("\\'", "'")
-
-private fun InAppProductListing.title() = title.trim()
-private fun InAppProductListing.description() = description.trim()
