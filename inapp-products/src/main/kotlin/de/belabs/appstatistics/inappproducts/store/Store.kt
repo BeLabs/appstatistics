@@ -12,6 +12,7 @@ data class StoreInAppProduct(
   val sku: String,
   val prettyString: String,
   val listings: Map<String, StoreInAppProductListing>,
+  val isLegacy: Boolean,
 )
 
 internal interface Store {
