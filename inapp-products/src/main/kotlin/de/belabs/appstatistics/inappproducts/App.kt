@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable internal data class App(
   @SerialName("name") val name: String,
   @SerialName("android_package_name") val androidPackageName: String,
+  @SerialName("apple_app_id") val appleAppId: Long? = null,
   @SerialName("read_only") val readOnly: Boolean = false,
   @SerialName("indentation") val indentation: String = "  ",
   @SerialName("android_resource_directory") val androidResourceDirectory: String? = null,
@@ -15,6 +16,7 @@ import kotlinx.serialization.Serializable
     val EXAMPLE = App(
       name = "BeCoach",
       androidPackageName = "app.becoach.android.coachee",
+      appleAppId = 1489873599L,
       androidResourceDirectory = "/Users/me/dev/BeCoach/app/src/main/res/",
     )
   }

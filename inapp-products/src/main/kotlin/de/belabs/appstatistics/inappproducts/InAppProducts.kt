@@ -1,7 +1,5 @@
 package de.belabs.appstatistics.inappproducts
 
-import com.google.api.services.androidpublisher.model.InAppProduct
-import com.google.api.services.androidpublisher.model.InAppProductListing
 import com.vanniktech.locale.Country
 import com.vanniktech.locale.Language
 import com.vanniktech.locale.Locale
@@ -76,6 +74,12 @@ internal class InAppProducts : CoreCommand() {
 
         val inAppProducts = query(store, app, appOutput)
         val hasChanges = updateInAppProductsFromApp(store, app, appOutput, inAppProducts)
+
+        maybeUpdateApple(
+          root = root,
+          app = app,
+          inAppProducts = inAppProducts,
+        )
 
         if (!hasChanges) {
           writeStringsFile(app, appOutput, inAppProducts)
@@ -268,6 +272,70 @@ internal class InAppProducts : CoreCommand() {
     }
 
     return false
+  }
+
+  private suspend fun maybeUpdateApple(
+    root: File,
+    app: App,
+    inAppProducts: List<StoreInAppProduct>,
+  ) {
+    if (app.appleAppId != null) {
+      val config = appStoreConnectConfig(root) ?: return
+      val client = AppStoreConnectClient(
+        config = config,
+      )
+
+      try {
+      logger.log("""🍏️ Doing the apple deed!""")
+
+      val inAppPurchases = client.getInAppPurchases(
+        appAppleId = app.appleAppId,
+      )
+
+      inAppProducts
+        .forEach { inAppProduct ->
+          val match = inAppPurchases.data.firstOrNull { inAppProduct.sku in it.attributes.productId }
+
+          if (match != null) {
+            println(inAppProduct.sku)
+            val localizations = client.getInAppPurchaseLocalizations(match.id)
+
+            val listings = localizations.data.map {
+              appStoreLocaleOrNull(it.attributes.locale) to StoreInAppProductListing(
+                title = it.attributes.name,
+                description = it.attributes.description
+              )
+            }.toMap()
+              .filterNotNullKeys()
+
+            val asdfasdfsdaf = inAppProduct.listings
+              .mapKeys { appStoreLocaleOrNull(it.key) }
+              .filterNotNullKeys()
+
+            if (asdfasdfsdaf != listings) {
+              if (inAppProduct.sku == "unlimited_colors") {
+                val version = client.updateInAppPurchaseLocalizations(
+                  iapId = match.id,
+                  localizations = asdfasdfsdaf,
+                )
+                logger.log("""🕵️‍️ Detected changes for ${inAppProduct.sku} and submitted as $version with ${asdfasdfsdaf.values.joinToString()}""")
+              }
+            } else {
+              logger.log("""✅ All localizations are up to date for ${inAppProduct.sku}""")
+            }
+
+            println(localizations)
+            println()
+          } else {
+            logger.log("""⚠️ Found no matching apple in app purchase for ${inAppProduct.sku}""")
+          }
+        }
+        } finally {
+          client.close()
+        }
+    } else {
+      logger.log("""🍏️ No apple id configured""")
+    }
   }
 
   private fun resourcePrefix(app: App, inAppProduct: StoreInAppProduct) = "${app.name.snakecase()}_inapp_${inAppProduct.sku}_"

@@ -41,17 +41,19 @@ internal class PlayStore(
     val oneTimeProducts = mutableListOf<OneTimeProduct>()
     var pageToken: String? = null
 
-    do {
-      val response = androidPublisher.monetization()
-        .onetimeproducts()
-        .list(app.androidPackageName)
-        .setPageSize(1000)
-        .setPageToken(pageToken)
-        .execute()
+    runCatching {
+      do {
+        val response = androidPublisher.monetization()
+          .onetimeproducts()
+          .list(app.androidPackageName)
+          .setPageSize(1000)
+          .setPageToken(pageToken)
+          .execute()
 
-      oneTimeProducts += response.oneTimeProducts.orEmpty()
-      pageToken = response.nextPageToken
-    } while (!pageToken.isNullOrEmpty())
+        oneTimeProducts += response.oneTimeProducts.orEmpty()
+        pageToken = response.nextPageToken
+      } while (!pageToken.isNullOrEmpty())
+    }
 
     val filtered = oneTimeProducts
       .filterNot { it.productId in legacySkus } // New API also returns the legacy ones!

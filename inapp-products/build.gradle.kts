@@ -13,6 +13,7 @@ kotlin {
 
 dependencies {
   api(project(":core"))
+  implementation(libs.auth0)
 }
 
 dependencies {

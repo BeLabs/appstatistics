@@ -6,6 +6,7 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
+import kotlinx.serialization.json.Json
 import java.io.File
 
 abstract class CoreCommand : CliktCommand() {
@@ -46,14 +47,25 @@ abstract class CoreCommand : CliktCommand() {
   abstract suspend fun runOn(organization: String, root: File)
 
   protected fun playStoreFile(directory: File): File? {
-    val playStoreFile = directory.resolve("play-store.json")
+    val file = directory.resolve("play-store.json")
 
-    if (!playStoreFile.exists()) {
-      logger.log("""🔴 In order to get reviews from the Play Store we need a Service account file at $playStoreFile""")
+    if (!file.exists()) {
+      logger.log("""🔴 In order to work with the Play Store we need a Service account file at $file""")
       logger.log("Follow these instructions to create one: https://github.com/Triple-T/gradle-play-publisher#service-account")
       return null
     }
 
-    return playStoreFile
+    return file
+  }
+
+  protected fun appStoreConnectConfig(directory: File): AppStoreConnectConfig? {
+    val file = directory.resolve("app-store-connect.json")
+
+    return runCatching { Json.decodeFromString(AppStoreConnectConfig.serializer(), file.readText()) }
+      .onFailure {
+        logger.log("""🔴 In order to talk to the App Store Connect we need a Configuration file at $file""")
+        logger.log("Example: ${jsonPretty.encodeToString(AppStoreConnectConfig.serializer(), AppStoreConnectConfig.EXAMPLE)}")
+      }
+      .getOrNull()
   }
 }
