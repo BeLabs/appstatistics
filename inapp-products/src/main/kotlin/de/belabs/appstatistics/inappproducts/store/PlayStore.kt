@@ -1,12 +1,13 @@
 package de.belabs.appstatistics.inappproducts.store
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
-import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.androidpublisher.AndroidPublisher
 import com.google.api.services.androidpublisher.AndroidPublisherScopes
 import com.google.api.services.androidpublisher.model.InAppProduct
+import com.google.api.services.androidpublisher.model.InAppProductListing
 import com.google.api.services.androidpublisher.model.OneTimeProduct
+import com.google.api.services.androidpublisher.model.OneTimeProductListing
 import com.google.auth.http.HttpCredentialsAdapter
 import com.google.auth.oauth2.GoogleCredentials
 import de.belabs.appstatistics.inappproducts.App
@@ -25,37 +26,38 @@ internal class PlayStore(
   override fun name() = "Android"
 
   override suspend fun inAppProducts(app: App): List<StoreInAppProduct> {
-    try {
-      val products = androidPublisher.inappproducts()
+    // Legacy.
+    val legacy = runCatching {
+      androidPublisher.inappproducts()
         .list(app.androidPackageName)
         .execute()
-
-      return products?.inappproduct
-        ?.sortedBy { it.sku }
+        .inappproduct
         .orEmpty()
         .map { it.converted() }
-    } catch (exception: GoogleJsonResponseException) {
-      if (exception.statusCode == 403 && exception.statusMessage == "Forbidden") {
-        val all = mutableListOf<OneTimeProduct>()
-        var pageToken: String? = null
+    }.getOrElse { emptyList() }
+    val legacySkus = legacy.map { it.sku }.toSet()
 
-        do {
-          val response = androidPublisher.monetization()
-            .onetimeproducts()
-            .list(app.androidPackageName)
-            .setPageSize(1000)
-            .setPageToken(pageToken)
-            .execute()
+    // New.
+    val oneTimeProducts = mutableListOf<OneTimeProduct>()
+    var pageToken: String? = null
 
-          all += response.oneTimeProducts.orEmpty()
-          pageToken = response.nextPageToken
-        } while (!pageToken.isNullOrEmpty())
+    do {
+      val response = androidPublisher.monetization()
+        .onetimeproducts()
+        .list(app.androidPackageName)
+        .setPageSize(1000)
+        .setPageToken(pageToken)
+        .execute()
 
-        return all.map { it.converted() }
-      } else {
-        throw exception
-      }
-    }
+      oneTimeProducts += response.oneTimeProducts.orEmpty()
+      pageToken = response.nextPageToken
+    } while (!pageToken.isNullOrEmpty())
+
+    val filtered = oneTimeProducts
+      .filterNot { it.productId in legacySkus } // New API also returns the legacy ones!
+      .map { it.converted() }
+
+    return (legacy + filtered).sortedBy { it.sku }
   }
 
   override suspend fun create(
@@ -80,23 +82,46 @@ internal class PlayStore(
   }
 
   override suspend fun edit(app: App, inAppProduct: StoreInAppProduct): StoreInAppProduct {
-    val current = androidPublisher.inappproducts().get(app.androidPackageName, inAppProduct.sku)
-      .execute()
+    if (inAppProduct.isLegacy) {
+      val current = androidPublisher.inappproducts().get(app.androidPackageName, inAppProduct.sku)
+        .execute()
 
-    require(current.packageName == app.androidPackageName) {
-      "Package names differ. Expected \"${app.androidPackageName}\" Actual: \"${current.packageName}\""
+      require(current.packageName == app.androidPackageName) {
+        "Package names differ. Expected \"${app.androidPackageName}\" Actual: \"${current.packageName}\""
+      }
+
+      current.listings = inAppProduct.listings.map { (languageCode, listing) ->
+        languageCode to InAppProductListing()
+          .setTitle(listing.title)
+          .setDescription(listing.description)
+      }.toMap()
+
+      return androidPublisher.inappproducts()
+        .update(current.packageName, current.sku, current)
+        .execute()
+        .converted()
+    } else {
+      val current = androidPublisher.monetization().onetimeproducts().get(app.androidPackageName, inAppProduct.sku)
+        .execute()
+
+      require(current.packageName == app.androidPackageName) {
+        "Package names differ. Expected \"${app.androidPackageName}\" Actual: \"${current.packageName}\""
+      }
+
+      current.listings = inAppProduct.listings.map { (languageCode, listing) ->
+        OneTimeProductListing()
+          .setLanguageCode(languageCode)
+          .setTitle(listing.title)
+          .setDescription(listing.description)
+      }
+
+      return androidPublisher.monetization().onetimeproducts()
+        .patch(app.androidPackageName, inAppProduct.sku, current)
+        .setUpdateMask("listings")
+        .setRegionsVersionVersion(current.regionsVersion.version)
+        .execute()
+        .converted()
     }
-
-    current.listings.forEach { (key, value) ->
-      val match = inAppProduct.listings.getValue(key)
-      value.title = match.title
-      value.description = match.description
-    }
-
-    return androidPublisher.inappproducts()
-      .update(current.packageName, current.sku, current)
-      .execute()
-      .converted()
   }
 
   private fun inAppProduct(
@@ -127,6 +152,7 @@ private fun InAppProduct.converted() = StoreInAppProduct(
       description = it.value.description.trim(),
     )
   },
+  isLegacy = true,
 )
 
 private fun OneTimeProduct.converted() = StoreInAppProduct(
@@ -135,7 +161,8 @@ private fun OneTimeProduct.converted() = StoreInAppProduct(
   listings = listings.associate {
     it.languageCode to StoreInAppProductListing(
       it.title,
-      it.description
+      it.description,
     )
   },
+  isLegacy = false,
 )

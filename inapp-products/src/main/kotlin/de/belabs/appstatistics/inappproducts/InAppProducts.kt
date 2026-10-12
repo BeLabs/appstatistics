@@ -212,20 +212,18 @@ internal class InAppProducts : CoreCommand() {
           val stringsContent = stringsFile.readLines()
           val linePrefixDescription = "${app.indentation}<string name=\"${resourceDescription(app, inAppProduct)}"
           val linePrefixTitle = "${app.indentation}<string name=\"${resourceTitle(app, inAppProduct)}"
-          val description = stringsContent.firstOrNull { it.startsWith(linePrefixDescription) }?.removePrefix(linePrefixDescription)?.removePrefix("\">")?.removeSuffix("</string>")?.xmlUnescaped()
-          val title = stringsContent.firstOrNull { it.startsWith(linePrefixTitle) }?.removePrefix(linePrefixTitle)?.removePrefix("\">")?.removeSuffix("</string>")?.xmlUnescaped()
+          val description = stringsContent.firstOrNull { it.startsWith(linePrefixDescription) }?.removePrefix(linePrefixDescription)?.substringAfter("\">")?.removeSuffix("</string>")?.xmlUnescaped()
+          val title = stringsContent.firstOrNull { it.startsWith(linePrefixTitle) }?.removePrefix(linePrefixTitle)?.substringAfter("\">")?.removeSuffix("</string>")?.xmlUnescaped()
           val current = inAppProduct.listings[locale]
           val willChange = current?.title != title || current?.description != description
 
           if (willChange) {
-            logger.log("""Change in $locale for ${inAppProduct.sku}""")
-
             if (current?.title != title) {
-              logger.log("""Title changed from ${current?.title} to $title""")
+              logger.log("""[${inAppProduct.sku}-$locale] Changed title from ${current?.title} to $title""")
             }
 
             if (current?.description != description) {
-              logger.log("""Title changed from ${current?.description} to $description""")
+              logger.log("""[${inAppProduct.sku}-$locale] Changed description from ${current?.description} to $description""")
             }
 
             listings += (
@@ -233,7 +231,7 @@ internal class InAppProducts : CoreCommand() {
                 title = title.orEmpty(),
                 description = description.orEmpty(),
               )
-            )
+              )
           } else {
             null
           }
@@ -391,7 +389,7 @@ internal class InAppProducts : CoreCommand() {
                   when {
                     match != null -> {
                       allInAppProducts.remove(match)
-                      "${app.indentation}$match"
+                      "${app.indentation}${match.xml(isUnused = IGNORE_UNUSED_RESOURCES in line)}"
                     }
                     else -> line
                   }
@@ -450,7 +448,8 @@ internal class InAppProducts : CoreCommand() {
     val name: String,
     val value: String,
   ) {
-    override fun toString() = """<string name="$name">${value.xmlEscaped()}</string>"""
+    fun xml(isUnused: Boolean) = """<string name="$name"${if (isUnused) " $IGNORE_UNUSED_RESOURCES" else ""}>${value.xmlEscaped()}</string>"""
+    override fun toString() = xml(isUnused = false)
   }
 }
 
@@ -460,3 +459,5 @@ private fun String.snakecase() = replace(" ", "_")
 
 private fun String.xmlEscaped() = replace("'", "’")
 private fun String.xmlUnescaped() = replace("\\'", "'")
+
+private const val IGNORE_UNUSED_RESOURCES = "tools:ignore=\"UnusedResources\""
