@@ -27,7 +27,7 @@ import kotlin.uuid.Uuid
         -----BEGIN PRIVATE KEY-----
         ...
         -----END PRIVATE KEY-----
-      """.trimIndent()
+      """.trimIndent(),
     )
   }
 }

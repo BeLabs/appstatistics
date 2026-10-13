@@ -13,6 +13,9 @@ import de.belabs.appstatistics.jsonPretty
 import kotlinx.serialization.builtins.ListSerializer
 import java.io.File
 
+// TODO(nik)
+// var foo = mapOf<String, Map<String, StoreInAppProductListing>>()
+
 internal class InAppProducts : CoreCommand() {
   override suspend fun runOn(
     organization: String,
@@ -73,17 +76,21 @@ internal class InAppProducts : CoreCommand() {
         )
 
         val inAppProducts = query(store, app, appOutput)
-        val hasChanges = updateInAppProductsFromApp(store, app, appOutput, inAppProducts)
+        val updatedInAppProducts = updateInAppProductsFromApp(store, app, appOutput, inAppProducts)
 
         maybeUpdateApple(
           root = root,
           app = app,
-          inAppProducts = inAppProducts,
+          inAppProducts = updatedInAppProducts ?: inAppProducts,
         )
 
-        if (!hasChanges) {
-          writeStringsFile(app, appOutput, inAppProducts)
+        if (updatedInAppProducts != null) {
+          writeStringsFile(app, appOutput, updatedInAppProducts)
         }
+
+        // if (app.name == "Rss Reader") { // TODO(nik)
+        // foo = inAppProducts.associate { it.sku to it.listings }
+        // }
 
         logger.decreaseIndent()
       }
@@ -190,16 +197,16 @@ internal class InAppProducts : CoreCommand() {
    * It looks at the strings xml files from the [app] and checks if any of the [inAppProducts]
    * have missing translations.
    * In this case, they have been added, and we want to update the listings also on the Play Console.
-   * Returns true if there are updates from the app.
+   * Returns the updated [StoreInAppProduct] or null if no changes have been made.
    */
   private suspend fun updateInAppProductsFromApp(
     store: Store,
     app: App,
     appOutput: File,
     inAppProducts: List<StoreInAppProduct>,
-  ): Boolean {
+  ): List<StoreInAppProduct>? {
     if (app.readOnly) {
-      return false
+      return null
     }
 
     val androidResourceDirectory = app.androidResourceDirectory?.let(::File)
@@ -223,23 +230,27 @@ internal class InAppProducts : CoreCommand() {
 
           if (willChange) {
             if (current?.title != title) {
-              logger.log("""[${inAppProduct.sku}-$locale] Changed title from ${current?.title} to $title""")
+              logger.log("""[${inAppProduct.sku}#$locale] Changed title from "${current?.title}" to "$title"""")
             }
 
             if (current?.description != description) {
-              logger.log("""[${inAppProduct.sku}-$locale] Changed description from ${current?.description} to $description""")
+              logger.log("""[${inAppProduct.sku}#$locale] Changed description from "${current?.description}" to "$description"""")
             }
 
-            listings += (
-              locale to StoreInAppProductListing(
-                title = title.orEmpty(),
-                description = description.orEmpty(),
-              )
-              )
+            listings += locale to StoreInAppProductListing(
+              title = title.orEmpty(),
+              description = description.orEmpty(),
+            )
           } else {
             null
           }
         }
+
+        // val test = foo[inAppProduct.sku] // TODO(nik)
+        //
+        // if (test != null) {
+        //   inAppProduct.copy(listings = test)
+        // }
 
         if (listings != inAppProduct.listings) {
           inAppProduct.copy(listings = listings)
@@ -254,24 +265,25 @@ internal class InAppProducts : CoreCommand() {
 
         val modifiedInAppProductsSkus = modifiedInAppProducts.map { it.sku }.toSet()
         val others = inAppProducts.filterNot { modifiedInAppProductsSkus.contains(it.sku) }
+        val updatedInAppProducts = others + modifiedInAppProducts.map {
+          val inAppProduct = store.edit(app, it)
+          appOutput.write(inAppProduct)
+          inAppProduct
+        }
 
         writeStringsFile(
           app = app,
           appOutput = appOutput,
-          inAppProducts = others + modifiedInAppProducts.map {
-            val inAppProduct = store.edit(app, it)
-            appOutput.write(inAppProduct)
-            inAppProduct
-          },
+          inAppProducts = updatedInAppProducts,
         )
 
         logger.log()
         logger.decreaseIndent()
-        return true
+        return updatedInAppProducts
       }
     }
 
-    return false
+    return null
   }
 
   private suspend fun maybeUpdateApple(
@@ -279,60 +291,58 @@ internal class InAppProducts : CoreCommand() {
     app: App,
     inAppProducts: List<StoreInAppProduct>,
   ) {
-    if (app.appleAppId != null) {
+    if (app.appleAppId != null && !app.readOnly) {
       val config = appStoreConnectConfig(root) ?: return
       val client = AppStoreConnectClient(
         config = config,
       )
 
       try {
-      logger.log("""🍏️ Doing the apple deed!""")
+        logger.log("""🍏️ Apple's turn""")
 
-      val inAppPurchases = client.getInAppPurchases(
-        appAppleId = app.appleAppId,
-      )
+        val inAppPurchases = client.getInAppPurchases(
+          appAppleId = app.appleAppId,
+        )
 
-      inAppProducts
-        .forEach { inAppProduct ->
-          val match = inAppPurchases.data.firstOrNull { inAppProduct.sku in it.attributes.productId }
+        inAppProducts
+          .forEach { inAppProduct ->
+            val match = inAppPurchases.data.firstOrNull { inAppProduct.sku in it.attributes.productId }
 
-          if (match != null) {
-            println(inAppProduct.sku)
-            val localizations = client.getInAppPurchaseLocalizations(match.id)
-
-            val listings = localizations.data.map {
-              appStoreLocaleOrNull(it.attributes.locale) to StoreInAppProductListing(
-                title = it.attributes.name,
-                description = it.attributes.description
-              )
-            }.toMap()
-              .filterNotNullKeys()
-
-            val asdfasdfsdaf = inAppProduct.listings
-              .mapKeys { appStoreLocaleOrNull(it.key) }
-              .filterNotNullKeys()
-
-            if (asdfasdfsdaf != listings) {
-              if (inAppProduct.sku == "unlimited_colors") {
-                val version = client.updateInAppPurchaseLocalizations(
-                  iapId = match.id,
-                  localizations = asdfasdfsdaf,
+            if (match != null) {
+              val currentLocalizations = client.getInAppPurchaseLocalizations(match.id).data.associate {
+                appStoreLocaleOrNull(it.attributes.locale) to StoreInAppProductListing(
+                  title = it.attributes.name,
+                  description = it.attributes.description,
                 )
-                logger.log("""🕵️‍️ Detected changes for ${inAppProduct.sku} and submitted as $version with ${asdfasdfsdaf.values.joinToString()}""")
+              }
+                .filterNotNullKeys()
+
+              val localizations = inAppProduct.listings
+                .mapKeys { appStoreLocaleOrNull(it.key) }
+                .filterNotNullKeys()
+
+              if (localizations != currentLocalizations) {
+                val appleErrors = inAppProduct.appleErrorsOrNull()
+
+                if (appleErrors == null) {
+                  val result = client.updateInAppPurchaseLocalizations(
+                    iapId = match.id,
+                    localizations = localizations,
+                  )
+                  logger.log("""🕵️‍️ Detected changes for ${inAppProduct.sku} and $result""")
+                } else {
+                  logger.log("""🕵️‍️ Detected changes for ${inAppProduct.sku} but can't change it due to: $appleErrors""")
+                }
+              } else {
+                logger.log("""✅ All Apple localizations are up to date for ${inAppProduct.sku}""")
               }
             } else {
-              logger.log("""✅ All localizations are up to date for ${inAppProduct.sku}""")
+              logger.log("""⚠️ Found no matching apple in app purchase for ${inAppProduct.sku}""")
             }
-
-            println(localizations)
-            println()
-          } else {
-            logger.log("""⚠️ Found no matching apple in app purchase for ${inAppProduct.sku}""")
           }
-        }
-        } finally {
-          client.close()
-        }
+      } finally {
+        client.close()
+      }
     } else {
       logger.log("""🍏️ No apple id configured""")
     }

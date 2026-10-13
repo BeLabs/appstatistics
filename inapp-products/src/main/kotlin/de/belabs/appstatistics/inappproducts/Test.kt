@@ -7,14 +7,24 @@ import com.vanniktech.locale.apple.app.store.AppleAppStoreLocale
 import com.vanniktech.locale.apple.app.store.appleAppStoreLocale
 import de.belabs.appstatistics.AppStoreConnectConfig
 import de.belabs.appstatistics.inappproducts.store.StoreInAppProductListing
-import io.ktor.client.*
-import io.ktor.client.call.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
+import io.ktor.network.sockets.SocketTimeoutException
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.security.KeyFactory
@@ -22,78 +32,79 @@ import java.security.interfaces.ECPrivateKey
 import java.security.spec.PKCS8EncodedKeySpec
 import java.util.Base64
 import java.util.Date
+import kotlin.time.Duration.Companion.seconds
 
 @Serializable data class JsonApiData<T>(
-  val data: T
+  val data: T,
 )
 
 @Serializable data class RelationshipData(
   val type: String,
-  val id: String
+  val id: String,
 )
 
 @Serializable data class Relationship(
-  val data: RelationshipData
+  val data: RelationshipData,
 )
 
 @Serializable data class CreateVersionRequest(
   val type: String,
-  val relationships: VersionRelationships
+  val relationships: VersionRelationships,
 )
 
 @Serializable data class VersionRelationships(
-  val inAppPurchase: Relationship
+  val inAppPurchase: Relationship,
 )
 
 @Serializable data class CreateLocalizationRequest(
   val type: String,
   val attributes: LocalizationAttributes,
-  val relationships: LocalizationRelationships
+  val relationships: LocalizationRelationships,
 )
 
 @Serializable
 data class UpdateLocalizationRequest(
   val type: String,
   val id: String,
-  val attributes: UpdateLocalizationAttributes
+  val attributes: UpdateLocalizationAttributes,
 )
 
 @Serializable data class LocalizationRelationships(
-  val version: Relationship
+  val version: Relationship,
 )
 
 @Serializable data class ResourceId(
   val id: String,
-  val type: String
+  val type: String,
 )
 
 @Serializable data class InAppPurchasesResponse(
-  val data: List<IapResource>
+  val data: List<IapResource>,
 )
 
 @Serializable data class IapResource(
   val id: String,
-  val attributes: IapAttributes
+  val attributes: IapAttributes,
 )
 
 @Serializable data class IapAttributes(
-  val productId: String
+  val productId: String,
 )
 
 @Serializable data class LocalizationsResponse(
-  val data: List<LocalizationResource>
+  val data: List<LocalizationResource>,
 )
 
 @Serializable data class LocalizationResource(
   val id: String,
-  val attributes: LocalizationAttributes
+  val attributes: LocalizationAttributes,
 )
 
 @Serializable data class LocalizationAttributes(
   val locale: String,
   val name: String,
   val description: String,
-  val state: String? = null
+  val state: String? = null,
 )
 
 @Serializable data class UpdateLocalizationAttributes(
@@ -103,30 +114,37 @@ data class UpdateLocalizationRequest(
 
 @Serializable
 data class VersionsResponse(
-  val data: List<VersionResource>
+  val data: List<VersionResource>,
 )
 
 @Serializable
 data class VersionResource(
   val id: String,
-  val attributes: VersionAttributes
+  val attributes: VersionAttributes,
 )
 
 @Serializable
 data class VersionAttributes(
   val version: Int,
-  val state: String
+  val state: String,
 )
 
 class AppStoreConnectClient(
   private val config: AppStoreConnectConfig,
 ) {
-  private val client = HttpClient(OkHttp.create {  }) {
+  private val client = HttpClient(OkHttp.create { }) {
     install(ContentNegotiation) {
-      json(Json {
-        ignoreUnknownKeys = true
-        prettyPrint = false
-      })
+      json(
+        Json {
+          ignoreUnknownKeys = true
+          prettyPrint = false
+        },
+      )
+    }
+
+    install(HttpTimeout) {
+      // Apple sucks. We intentionally decrease it and rather try more times.
+      socketTimeoutMillis = 5.seconds.inWholeMilliseconds
     }
   }
 
@@ -169,7 +187,7 @@ class AppStoreConnectClient(
 
   suspend fun updateInAppPurchaseLocalizations(
     iapId: String,
-    localizations: Map<AppleAppStoreLocale, StoreInAppProductListing>
+    localizations: Map<AppleAppStoreLocale, StoreInAppProductListing>,
   ): String {
     val token = generateJwt()
 
@@ -185,8 +203,8 @@ class AppStoreConnectClient(
         val request = CreateVersionRequest(
           type = "inAppPurchaseVersions",
           relationships = VersionRelationships(
-            inAppPurchase = Relationship(RelationshipData("inAppPurchases", iapId))
-          )
+            inAppPurchase = Relationship(RelationshipData("inAppPurchases", iapId)),
+          ),
         )
 
         val versionResponse = client.post("$baseUrl/v1/inAppPurchaseVersions") {
@@ -208,9 +226,7 @@ class AppStoreConnectClient(
     }.body<LocalizationsResponse>()
 
     // 3. Create or patch each localization.
-    localizations.forEach { (locale, listing) ->
-      println("$locale: $listing")
-
+    val results = localizations.map { (locale, listing) ->
       require(listing.description.length <= 55) {
         "$iapId $locale ${listing.description} is too long"
       }
@@ -221,45 +237,67 @@ class AppStoreConnectClient(
         // If it is re-run, we might have already updated it. In that case we don't want to do anything!
         val isDifferent = existing.attributes.name != listing.title || existing.attributes.description != listing.description
 
-        if (isDifferent) {
-          val request = UpdateLocalizationRequest(
-            type = "inAppPurchaseLocalizations",
-            id = existing.id,
-            attributes = UpdateLocalizationAttributes(listing.title, listing.description)
-          )
-
+        !isDifferent || try {
           val response = client.patch("$baseUrl/v2/inAppPurchaseLocalizations/${existing.id}") {
             header(HttpHeaders.Authorization, "Bearer $token")
             contentType(ContentType.Application.Json)
-            setBody(JsonApiData(request))
+            setBody(
+              JsonApiData(
+                UpdateLocalizationRequest(
+                  type = "inAppPurchaseLocalizations",
+                  id = existing.id,
+                  attributes = UpdateLocalizationAttributes(listing.title, listing.description),
+                ),
+              ),
+            )
           }
 
           if (!response.status.isSuccess()) {
             error("$iapId $locale failed -> ${response.bodyAsText()}")
           }
+
+          true
+        } catch (_: SocketTimeoutException) {
+          // Ignore for now. This is anyway incrementally possible.
+          false
         }
       } else {
-        val request = CreateLocalizationRequest(
-          type = "inAppPurchaseLocalizations",
-          attributes = LocalizationAttributes(locale.toString(), listing.title, listing.description),
-          relationships = LocalizationRelationships(
-            version = Relationship(RelationshipData("inAppPurchaseVersions", versionId))
-          )
-        )
+        try {
+          val response = client.post("$baseUrl/v2/inAppPurchaseLocalizations") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            contentType(ContentType.Application.Json)
+            setBody(
+              JsonApiData(
+                CreateLocalizationRequest(
+                  type = "inAppPurchaseLocalizations",
+                  attributes = LocalizationAttributes(locale.toString(), listing.title, listing.description),
+                  relationships = LocalizationRelationships(
+                    version = Relationship(RelationshipData("inAppPurchaseVersions", versionId)),
+                  ),
+                ),
+              ),
+            )
+          }
 
-        val response = client.post("$baseUrl/v2/inAppPurchaseLocalizations") {
-          header(HttpHeaders.Authorization, "Bearer $token")
-          contentType(ContentType.Application.Json)
-          setBody(JsonApiData(request))
-        }
+          if (!response.status.isSuccess()) {
+            error("$iapId $locale failed -> ${response.bodyAsText()}")
+          }
 
-        if (!response.status.isSuccess()) {
-          error("$iapId $locale failed -> ${response.bodyAsText()}")
+          true
+        } catch (_: SocketTimeoutException) {
+          // Ignore for now. This is anyway incrementally possible.
+          false
         }
       }
     }
 
-    return versionId
+    val successful = results.filter { it }
+    val success = successful.size == localizations.size
+
+    return when (success) {
+      true -> "submitted as $versionId"
+      false -> "partially submitted (${successful.size} / ${localizations.size}), please re-run"
+    }
   }
 
   fun close() = client.close()
