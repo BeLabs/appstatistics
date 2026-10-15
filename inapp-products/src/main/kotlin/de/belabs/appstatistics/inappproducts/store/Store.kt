@@ -13,10 +13,9 @@ private const val APPLE_MAX_TITLE_LENGTH = 30
 private const val APPLE_MAX_DESCRIPTION_LENGTH = 55
 
 data class StoreInAppProduct(
-  val sku: String,
+  val id: String,
   val prettyString: String,
   val listings: Map<String, StoreInAppProductListing>,
-  val isLegacy: Boolean,
 ) {
   fun appleErrorsOrNull(): String? {
     val default = listings.getValue("en-US")

@@ -14,7 +14,7 @@ import kotlinx.serialization.builtins.ListSerializer
 import java.io.File
 
 // TODO(nik)
-// var foo = mapOf<String, Map<String, StoreInAppProductListing>>()
+var foo = mapOf<String, Map<String, StoreInAppProductListing>>()
 
 internal class InAppProducts : CoreCommand() {
   override suspend fun runOn(
@@ -88,9 +88,9 @@ internal class InAppProducts : CoreCommand() {
           writeStringsFile(app, appOutput, updatedInAppProducts)
         }
 
-        // if (app.name == "Rss Reader") { // TODO(nik)
-        // foo = inAppProducts.associate { it.sku to it.listings }
-        // }
+        if (app.name == "Rss Reader") { // TODO(nik)
+          foo = inAppProducts.associate { it.id to it.listings }
+        }
 
         logger.decreaseIndent()
       }
@@ -205,10 +205,6 @@ internal class InAppProducts : CoreCommand() {
     appOutput: File,
     inAppProducts: List<StoreInAppProduct>,
   ): List<StoreInAppProduct>? {
-    if (app.readOnly) {
-      return null
-    }
-
     val androidResourceDirectory = app.androidResourceDirectory?.let(::File)
 
     if (androidResourceDirectory != null && androidResourceDirectory.exists()) {
@@ -230,11 +226,11 @@ internal class InAppProducts : CoreCommand() {
 
           if (willChange) {
             if (current?.title != title) {
-              logger.log("""[${inAppProduct.sku}#$locale] Changed title from "${current?.title}" to "$title"""")
+              logger.log("""[${inAppProduct.id}#$locale] Changed title from "${current?.title}" to "$title"""")
             }
 
             if (current?.description != description) {
-              logger.log("""[${inAppProduct.sku}#$locale] Changed description from "${current?.description}" to "$description"""")
+              logger.log("""[${inAppProduct.id}#$locale] Changed description from "${current?.description}" to "$description"""")
             }
 
             listings += locale to StoreInAppProductListing(
@@ -246,13 +242,11 @@ internal class InAppProducts : CoreCommand() {
           }
         }
 
-        // val test = foo[inAppProduct.sku] // TODO(nik)
-        //
-        // if (test != null) {
-        //   inAppProduct.copy(listings = test)
-        // }
+        val test = foo[inAppProduct.id] // TODO(nik)
 
-        if (listings != inAppProduct.listings) {
+        if (test != null && test != inAppProduct.listings) {
+          inAppProduct.copy(listings = test)
+        } else if (listings != inAppProduct.listings) {
           inAppProduct.copy(listings = listings)
         } else {
           null
@@ -261,25 +255,37 @@ internal class InAppProducts : CoreCommand() {
 
       if (modifiedInAppProducts.isNotEmpty()) {
         logger.increaseIndent()
-        logger.log("""🕵️‍️ Detected ${modifiedInAppProducts.size} change(s) in app products from your Android code: ${modifiedInAppProducts.joinToString { it.sku } }""")
+        logger.log("""🕵️‍️ Detected ${modifiedInAppProducts.size} change(s) in app products from your Android code: ${modifiedInAppProducts.joinToString { it.id } }""")
 
-        val modifiedInAppProductsSkus = modifiedInAppProducts.map { it.sku }.toSet()
-        val others = inAppProducts.filterNot { modifiedInAppProductsSkus.contains(it.sku) }
-        val updatedInAppProducts = others + modifiedInAppProducts.map {
-          val inAppProduct = store.edit(app, it)
-          appOutput.write(inAppProduct)
-          inAppProduct
+        val canUpdate = !app.androidSuspended
+
+        val modifiedIds = modifiedInAppProducts.map { it.id }.toSet()
+        val unaffected = inAppProducts.filterNot { modifiedIds.contains(it.id) }
+
+        val updated = unaffected + when {
+          canUpdate -> {
+            logger.log("""🔄 Updating Play Store""")
+            modifiedInAppProducts.map {
+              val inAppProduct = store.edit(app, it)
+              appOutput.write(inAppProduct)
+              inAppProduct
+            }
+          }
+          else -> {
+            logger.log("""🥺 Can't update Play Store because App is suspended""")
+            modifiedInAppProducts
+          }
         }
 
         writeStringsFile(
           app = app,
           appOutput = appOutput,
-          inAppProducts = updatedInAppProducts,
+          inAppProducts = updated,
         )
 
         logger.log()
         logger.decreaseIndent()
-        return updatedInAppProducts
+        return updated
       }
     }
 
@@ -291,7 +297,7 @@ internal class InAppProducts : CoreCommand() {
     app: App,
     inAppProducts: List<StoreInAppProduct>,
   ) {
-    if (app.appleAppId != null && !app.readOnly) {
+    if (app.appleAppId != null) {
       val config = appStoreConnectConfig(root) ?: return
       val client = AppStoreConnectClient(
         config = config,
@@ -306,7 +312,7 @@ internal class InAppProducts : CoreCommand() {
 
         inAppProducts
           .forEach { inAppProduct ->
-            val match = inAppPurchases.data.firstOrNull { inAppProduct.sku in it.attributes.productId }
+            val match = inAppPurchases.data.firstOrNull { inAppProduct.id in it.attributes.productId }
 
             if (match != null) {
               val currentLocalizations = client.getInAppPurchaseLocalizations(match.id).data.associate {
@@ -329,15 +335,15 @@ internal class InAppProducts : CoreCommand() {
                     iapId = match.id,
                     localizations = localizations,
                   )
-                  logger.log("""🕵️‍️ Detected changes for ${inAppProduct.sku} and $result""")
+                  logger.log("""🕵️‍️ Detected changes for ${inAppProduct.id} and $result""")
                 } else {
-                  logger.log("""🕵️‍️ Detected changes for ${inAppProduct.sku} but can't change it due to: $appleErrors""")
+                  logger.log("""🕵️‍️ Detected changes for ${inAppProduct.id} but can't change it due to: $appleErrors""")
                 }
               } else {
-                logger.log("""✅ All Apple localizations are up to date for ${inAppProduct.sku}""")
+                logger.log("""✅ All Apple localizations are up to date for ${inAppProduct.id}""")
               }
             } else {
-              logger.log("""⚠️ Found no matching apple in app purchase for ${inAppProduct.sku}""")
+              logger.log("""⚠️ Found no matching apple in app purchase for ${inAppProduct.id}""")
             }
           }
       } finally {
@@ -348,7 +354,7 @@ internal class InAppProducts : CoreCommand() {
     }
   }
 
-  private fun resourcePrefix(app: App, inAppProduct: StoreInAppProduct) = "${app.name.snakecase()}_inapp_${inAppProduct.sku}_"
+  private fun resourcePrefix(app: App, inAppProduct: StoreInAppProduct) = "${app.name.snakecase()}_inapp_${inAppProduct.id.replace(".", "_")}_"
 
   private fun resourceTitle(app: App, inAppProduct: StoreInAppProduct) = "${resourcePrefix(app, inAppProduct)}title"
 
@@ -364,13 +370,13 @@ internal class InAppProducts : CoreCommand() {
         val locale = Locale.from(localeString)
         listOf(
           LocalisedInAppProduct(
-            sku = inAppProduct.sku,
+            id = inAppProduct.id,
             locale = locale,
             name = resourceDescription(app, inAppProduct),
             value = inAppProductListing.description,
           ),
           LocalisedInAppProduct(
-            sku = inAppProduct.sku,
+            id = inAppProduct.id,
             locale = locale,
             name = resourceTitle(app, inAppProduct),
             value = inAppProductListing.title,
@@ -443,8 +449,6 @@ internal class InAppProducts : CoreCommand() {
     if (androidResourceDirectory != null) {
       if (!androidResourceDirectory.exists()) {
         logger.log("""❌️ Android resource directory does not exist: $androidResourceDirectory""")
-      } else if (app.readOnly) {
-        logger.log("""⏩️ Skipping writing strings.xml since it is read only""")
       } else {
         val valuesDirectories = androidResourceDirectory.valuesDirectories()
         val localeInAppProductsLocaleMap = localeInAppProducts.groupBy { it.locale }
@@ -479,12 +483,12 @@ internal class InAppProducts : CoreCommand() {
           }
         }
 
-        localeInAppProducts.groupBy { it.sku }
-          .forEach { (sku, inAppProducts) ->
+        localeInAppProducts.groupBy { it.id }
+          .forEach { (id, inAppProducts) ->
             val diff = allLocales - inAppProducts.map { it.locale }.toSet()
 
             if (diff.isNotEmpty()) {
-              logger.log("""⚠️ Missing translations for $sku: ${diff.joinToString(separator = ", ")}""")
+              logger.log("""⚠️ Missing translations for $id: ${diff.joinToString(separator = ", ")}""")
             }
           }
 
@@ -514,14 +518,14 @@ internal class InAppProducts : CoreCommand() {
   }
 
   private fun File.write(inAppProduct: StoreInAppProduct): File {
-    val file = resolve("${inAppProduct.sku}.json")
-    logger.log("""✍️ Writing ${inAppProduct.sku} to $file""")
+    val file = resolve("${inAppProduct.id}.json")
+    logger.log("""✍️ Writing ${inAppProduct.id} to $file""")
     file.writeText(inAppProduct.prettyString)
     return file
   }
 
   private data class LocalisedInAppProduct(
-    val sku: String,
+    val id: String,
     val locale: Locale,
     val name: String,
     val value: String,
