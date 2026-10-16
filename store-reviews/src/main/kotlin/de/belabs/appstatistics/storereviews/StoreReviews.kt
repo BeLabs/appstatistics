@@ -104,6 +104,8 @@ internal class StoreReviews : CoreCommand() {
       stores = stores,
       notifiers = notifiers,
     )
+
+    stores.forEach { it.close() }
   }
 
   private suspend fun process(directory: File, apps: List<App>, stores: List<Store>, notifiers: StoreReviewsNotifier) {

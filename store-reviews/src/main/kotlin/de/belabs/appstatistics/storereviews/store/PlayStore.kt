@@ -44,4 +44,6 @@ internal class PlayStore(
 
     return emptyList()
   }
+
+  override fun close() = Unit
 }
