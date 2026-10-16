@@ -17,7 +17,8 @@ import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.time.toKotlinInstant
 
 internal class AppleStore : Store {
-  private val httpClient = HttpClient(OkHttp.create()) {
+  private val engine = OkHttp.create()
+  private val httpClient = HttpClient(engine) {
     defaultRequest {
       url.protocol = URLProtocol.HTTPS
       url.host = "itunes.apple.com"
@@ -63,6 +64,11 @@ internal class AppleStore : Store {
     }
 
     return emptyList()
+  }
+
+  override fun close() {
+    httpClient.close()
+    engine.close()
   }
 }
 

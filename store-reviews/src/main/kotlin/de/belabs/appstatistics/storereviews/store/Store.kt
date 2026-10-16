@@ -7,4 +7,6 @@ internal interface Store {
   fun name(): String
 
   suspend fun reviews(app: App): List<Review>
+
+  fun close()
 }
