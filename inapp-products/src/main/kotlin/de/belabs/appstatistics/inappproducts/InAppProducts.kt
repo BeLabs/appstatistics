@@ -299,55 +299,60 @@ internal class InAppProducts : CoreCommand() {
   ) {
     if (app.appleAppId != null) {
       val config = appStoreConnectConfig(root) ?: return
-      val client = AppStoreConnectClient(
-        config = config,
-      )
+      // val client = AppStoreConnectClient(
+      //   config = config,
+      // )
 
       try {
         logger.log("""🍏️ Apple's turn""")
 
-        val inAppPurchases = client.getInAppPurchases(
-          appAppleId = app.appleAppId,
-        )
+        // val inAppPurchases = client.getInAppPurchases(
+        //   appAppleId = app.appleAppId,
+        // )
 
         inAppProducts
           .forEach { inAppProduct ->
-            val match = inAppPurchases.data.firstOrNull { inAppProduct.id in it.attributes.productId }
+            val appleErrors = inAppProduct.appleErrorsOrNull()
 
-            if (match != null) {
-              val currentLocalizations = client.getInAppPurchaseLocalizations(match.id).data.associate {
-                appStoreLocaleOrNull(it.attributes.locale) to StoreInAppProductListing(
-                  title = it.attributes.name,
-                  description = it.attributes.description,
-                )
-              }
-                .filterNotNullKeys()
-
-              val localizations = inAppProduct.listings
-                .mapKeys { appStoreLocaleOrNull(it.key) }
-                .filterNotNullKeys()
-
-              if (localizations != currentLocalizations) {
-                val appleErrors = inAppProduct.appleErrorsOrNull()
-
-                if (appleErrors == null) {
-                  val result = client.updateInAppPurchaseLocalizations(
-                    iapId = match.id,
-                    localizations = localizations,
-                  )
-                  logger.log("""🕵️‍️ Detected changes for ${inAppProduct.id} and $result""")
-                } else {
-                  logger.log("""🕵️‍️ Detected changes for ${inAppProduct.id} but can't change it due to: $appleErrors""")
-                }
-              } else {
-                logger.log("""✅ All Apple localizations are up to date for ${inAppProduct.id}""")
-              }
-            } else {
-              logger.log("""⚠️ Found no matching apple in app purchase for ${inAppProduct.id}""")
+            if (appleErrors != null && !app.androidSuspended) {
+              logger.log("""🕵️‍️ Detected changes for ${inAppProduct.id} but can't change it due to: $appleErrors""")
             }
+            // val match = inAppPurchases.data.firstOrNull { inAppProduct.id in it.attributes.productId }
+            //
+            // if (match != null) {
+            //   val currentLocalizations = client.getInAppPurchaseLocalizations(match.id).data.associate {
+            //     appStoreLocaleOrNull(it.attributes.locale) to StoreInAppProductListing(
+            //       title = it.attributes.name,
+            //       description = it.attributes.description,
+            //     )
+            //   }
+            //     .filterNotNullKeys()
+            //
+            //   val localizations = inAppProduct.listings
+            //     .mapKeys { appStoreLocaleOrNull(it.key) }
+            //     .filterNotNullKeys()
+            //
+            //   if (localizations != currentLocalizations) {
+            //     val appleErrors = inAppProduct.appleErrorsOrNull()
+            //
+            //     if (appleErrors == null) {
+            //       val result = client.updateInAppPurchaseLocalizations(
+            //         iapId = match.id,
+            //         localizations = localizations,
+            //       )
+            //       logger.log("""🕵️‍️ Detected changes for ${inAppProduct.id} and $result""")
+            //     } else {
+            //       logger.log("""🕵️‍️ Detected changes for ${inAppProduct.id} but can't change it due to: $appleErrors""")
+            //     }
+            //   } else {
+            //     logger.log("""✅ All Apple localizations are up to date for ${inAppProduct.id}""")
+            //   }
+            // } else {
+            //   logger.log("""⚠️ Found no matching apple in app purchase for ${inAppProduct.id}""")
+            // }
           }
       } finally {
-        client.close()
+        // client.close()
       }
     } else {
       logger.log("""🍏️ No apple id configured""")
